@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+import sys
+from yamaha_av import YamahaAV
+import time
+
+commands = {'pon:': 'power on',
+            'pof:': 'power off',
+            'vup [n]:': 'volume up',
+            'vdo [n]:': 'volume down'}
+
+def main(argv):
+    y = YamahaAV('192.168.1.130')
+    time.sleep(0.25)
+    y.setup()
+    time.sleep(0.25)
+    if len(argv) < 2:
+        for key in commands:
+            print(key, commands[key])
+        sys.exit(1)
+    if argv[1] == 'pon':
+        y.power_on()
+    elif argv[1] == 'pof':
+        y.power_standby()
+    elif argv[1] == 'vup':
+        try:
+            n = int(argv[2])
+        except IndexError:
+            n = 4
+        finally:
+            y.increase_volume(-1, n)
+    elif argv[1].startswith('vdo'):
+        try:
+            n = int(argv[2])
+        except IndexError:
+            n = 4
+        finally:
+            y.decrease_volume(-1, n)
+    else:
+        print('commands: pon poff fpoff vup vdown')
+
+    del y
+    sys.exit()
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
