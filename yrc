@@ -8,6 +8,7 @@ commands = {'pon:': 'power on',
             'vup [n]:': 'volume up',
             'vdo [n]:': 'volume down'}
 
+
 def main(argv):
     y = YamahaAV('192.168.1.130')
     time.sleep(0.25)
