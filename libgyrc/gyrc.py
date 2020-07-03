@@ -4,11 +4,12 @@ import sys
 # import time
 from yamaha_av import YamahaAV
 from pymusiccast import McDevice
-from urllib.parse import quote
 import gi
 from gi.repository import GObject
 from gi.repository import GLib
 from slider import Slider
+from switches import RecvrPower, PPSwitch
+from inputs import Inputs
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gdk
@@ -21,20 +22,6 @@ def boolit(state):
     return (True if state == 'On' else False)
 
 
-def new_volume_slider():
-    slider = Gtk.Scale.new_with_range(
-                Gtk.Orientation.HORIZONTAL, -80, 0, 2)
-    for n in range(-80, 0, 2):
-        slider.add_mark(n, Gtk.PositionType.BOTTOM)
-    slider.set_digits(1)
-    slider.set_draw_value(True)
-    slider.set_value_pos(Gtk.PositionType.TOP)
-    slider.set_size_request(320, 18)
-    slider.set_increments(0.5, 0.5)
-    slider.set_sensitive(False)
-    return slider
-
-
 class YamaWin(Gtk.Window):
     ip = '192.168.1.130'
     vol_pressed = False
@@ -42,33 +29,30 @@ class YamaWin(Gtk.Window):
     def __init__(self):
 
         Gtk.Window.__init__(self, title='Gyrc')
+        self.connect('destroy', Gtk.main_quit)
         self.mcd = MCD(self, self.ip)
         self.yav = YAV(self, self.ip)
         self.yav.setup()
-
+#        self.ymon = YMonitor()
+#        print(self.ymon.info)
         self.recvState = self.yav.get_status_string('Power')
         self.recvPower = RecvrPower(self.yav)
-        label = Gtk.Label.new_with_mnemonic('Po_wer')
-        label.set_text('Power')
+        label = Gtk.Label.new_with_mnemonic('P_ower')
         label.set_mnemonic_widget(self.recvPower)
-        self.recvPower.add_mnemonic_label(Gtk.Label.new_with_mnemonic('_B'))
+        label.set_halign(Gtk.Align.END)
         grid = Gtk.Grid()
         self.set_default_size(640, 320)
         self.add(grid)
-#        hspacer = Gtk.Box()
-#        hspacer.set_width = 16
         vspacer = Gtk.Box()
-        vspacer.set_size_request(32, 120)
-        grid.set_column_spacing(10)
+        vspacer.set_size_request(32, 32)
+        grid.set_column_spacing(4)
         grid.set_row_spacing(4)
         grid.attach(label, 0, 0, 1, 1)
-        grid.attach(self.recvPower, 2, 0, 1, 1)
-#        grid.attach(hspacer, 1, 0, 2, 2)
-#        grid.attach(vspacer, 0, 1, 12, 1)
-#        self.volSlider = new_volume_slider()
+        hbox = Gtk.HBox()
+        hbox.pack_start(self.recvPower, True, False, 32)
+        grid.attach(hbox, 1, 0, 1, 1)
         self.volSlider = Slider(-80, 0.0)
-        self.volSlider.set_size_request(380, 10)
-#        grid.attach(self.volSlider, 4, 0, 12, 1)
+        self.volSlider.set_size_request(300, 10)
         self.volUpBtn = Gtk.Button.new_from_icon_name(
                         Gtk.STOCK_GO_FORWARD,
                         Gtk.IconSize.SMALL_TOOLBAR)
@@ -79,38 +63,51 @@ class YamaWin(Gtk.Window):
         self.volDnBtn.set_size_request(10, 10)
 
         slider_box = Gtk.HBox()
-        slider_box.set_size_request(400, 10)
+        slider_box.set_size_request(320, 10)
         slider_box.pack_start(self.volDnBtn, True, True, 0)
         slider_box.pack_start(self.volSlider, True, True, 0)
         slider_box.pack_start(self.volUpBtn, True, True, 0)
 
-#        grid.attach(self.volUpBtn, 18, 0, 1, 1)
-#        grid.attach(self.volDnBtn, 3, 0, 1, 1)
-        grid.attach(slider_box, 3, 0, 16, 1)
-
+        grid.attach(slider_box, 2, 0, 15, 1)
+        self.ppSwitch = PPSwitch(self.mcd)
+        grid.attach(self.ppSwitch, 19, 0, 1, 1)
+        label = Gtk.Label.new_with_mnemonic('_Pause/\nPlay')
+        label.set_mnemonic_widget(self.ppSwitch)
+        self.ppSwitch.set_active(True if self.mcd.playback == 'play'
+                                 else False)
+        grid.attach(label, 20, 0, 1, 1)
+        grid.attach(vspacer, 0, 1, 20, 1)
+        self.inputs = Inputs(self.mcd)
+        self.inputs_box = self.inputs.cbox
+        # self.inputs_box.connect('changed', self.on_inputs_changed)
+        hbox = Gtk.HBox()
+        hbox.pack_start(self.inputs, False, False, 4)
+        hbox.pack_start(self.inputs.select_button, False, False, 4)
+        hbox.set_size_request(320, 32)
+        grid.attach(hbox, 0, 2, 20, 1)
         self.info_box = Gtk.VBox()
         self.info_box.set_size_request(10, 10)
         self.labels = []
         for n in range(3):
             self.labels.append(Gtk.Label())
+            self.labels[n].set_max_width_chars(65)
             self.labels[n].set_halign(Gtk.Align.START)
             self.labels[n].set_ellipsize(EllipsizeMode.END)
-#            spacer = Gtk.Box()
-#            spacer.set_size_request(20, 4)
             hbox = Gtk.HBox()
-#            hbox.add(spacer)
             hbox.pack_start(self.labels[n], True, True, 4)
             self.info_box.pack_start(hbox, True, False, 8)
 
-        self.mcd.checkit()
-        grid.attach(self.info_box, 1, 4, 15, 1)
+#        self.mcd.checkit()
+        grid.attach(self.info_box, 1, 3, 28, 1)
         print('---')
-        print(self.recvState)
         self.volSlider.set_value(self.yav.get_volume())
         self.recvPower.set_state(boolit(self.recvState))
         self.yav.monitor()
         self.mcd.monitor()
         self.yav.connect('changed', self.set_power)
+        self.mcd.connect('play-toggled',
+                         self.on_play_toggled,
+                         self.mcd.playback)
         self.recvPower.connect('state-set', self.pwr_cb)
         self.volhandler = self.volSlider.connect('value-changed',
                                                  self.volslider_changed)
@@ -136,10 +133,30 @@ class YamaWin(Gtk.Window):
                               (self.volSlider.get_value(),
                                self.yav.get_volume()))
 
-#        self.volUpBtn.connect_object('clicked', self.vol_up, self.volSlider)
-#        self.volDnBtn.connect_object('clicked', self.vol_down, self.volSlider)
+        self.volUpBtn.connect_object('clicked', self.vol_up, self.volSlider)
+        self.volDnBtn.connect_object('clicked', self.vol_down, self.volSlider)
 
-#        print(self.mcd.get_play_info())
+        self.show_all()
+
+#        thread = threading.Thread(target=self.ymon.run)
+#        thread.daemon = True
+#        thread.start()
+
+    def on_play_toggled(self, mcd, status=None, *args):
+        #        print('        play_toggled')
+        #   print('status:  %s' % status)
+        # print(args[0])
+        self.ppSwitch.set_active(
+            True if status == 'play' else False)
+
+    def on_inputs_changed(self, input_box):
+        model = input_box.get_model()
+        active = input_box.get_active()
+        service = model[active][1]
+        print(service)
+        # self.mcd.zone()
+        main = self.mcd.get_zone_obj('main')
+        main.set_input(service)
 
     def vol_up(self, volslider):
         value = volslider.get_value()
@@ -161,29 +178,27 @@ class YamaWin(Gtk.Window):
         return True
 
     def volslider_changed(self, slider):
-        print(slider)
+        # print(slider)
         value = slider.get_value()
         self.yav.set_volume(0, value)
 
     def adjust_volslider(self, yav, status):
-        print('adjust_volslider', status)
+        # print('adjust_volslider', status)
         self.volSlider.set_value(value=status)
         return True
 
     def volbtn_click(self, widget, event, data=None):
-        print(event.type, event.button)
+        #        print(event.type, event.button)
         if event.button == 1:
             if event.type == Gdk.EventType.BUTTON_PRESS:
                 self.vol_pressed = True
             elif event.type == Gdk.EventType.BUTTON_RELEASE:
                 self.vol_pressed = False
-            GLib.timeout_add(100, self.vol_check_loop, widget)
+            GLib.timeout_add(200, self.vol_check_loop, widget)
 
     def vol_check_loop(self, widget):
         if self.vol_pressed:
             slider_value = self.volSlider.get_value()
-#            if -20.0 < slider_value < -70.0:
-#                return False
             if widget == self.volDnBtn:
                 self.yav.decrease_volume(zone=0, dec=2.0)
                 self.volSlider.set_value(slider_value - 2.0)
@@ -195,48 +210,86 @@ class YamaWin(Gtk.Window):
             return False
 
 
-class RecvrPower(Gtk.Switch):
-    _state = None
+class YMonitor(McDevice):
+    def __init__(self, host='yamaha', port=5007):
+        McDevice.__init__(self, host, port)
+        self.new_info = self.get_play_info()
+        self.info = self.new_info
+        self.main_zone = self.zones.get('main')
+        self.handle_status()
 
-    def __init__(self, yav):
-        Gtk.Switch.__init__(self)
+    def run(self):
+        while True:
+            self.msg = self.messages.get()
 
-        Gtk.Switch.new()
-        self.yav = yav
-        self.connect('state-set', self.on_clicked)
-        self.connect('activate', self.on_clicked, self.get_state())
+            if b'netusb' in self.msg:
 
-    def on_clicked(self, widget, state):
-        print('on click, state is ' + str(state))
-        if state is True:
-            self.yav.power_on()
-        elif state is False:
-            self.yav.power_standby()
-        print('just toggled button')
+                self.new_info = self.get_play_info()
+                if self.new_info != self.info:
+                    for item in self.new_info:
+                        if 'time' in item:
+                            continue
+                        value = self.new_info.get(item)
+                        if value != self.info.get(item):
+                            print('%s:  %s' % (item, value))
+                    self.info = self.new_info
+
+            if b'zone' in self.msg:
+                print('                        zone')
+                print(self.main_zone.get_status())
+
         return False
 
 
-class MCD(McDevice):
+class MCD(McDevice, GObject.GObject):
     def __init__(self, window, ip):
         McDevice.__init__(self, ip)
+        GObject.GObject.__init__(self)
         self.window = window
+        info = self.get_play_info()
+        self.playback = info.get('playback')
+        self.prev_playback = self.playback
 
     def monitor(self):
-        GLib.timeout_add_seconds(4, self.checkit)
+        GLib.timeout_add_seconds(1, self.checkit)
 
     def checkit(self):
         info = self.get_play_info()
-#        print(self.get_play_info().get('artist'))
-#        print(self.get_play_info().get('album'))
-#        print(self.get_play_info().get('track'))
         lines = []
         lines.append(info.get('artist'))
         lines.append(info.get('album'))
-        lines.append(quote(info.get('track'), safe=' '))
-#        print(lines)
+        lines.append(info.get('track'))
+        if info.get('playback') != self.prev_playback:
+            self.playback = info.get('playback')
+            self.prev_playback = self.playback
+            self.emit('play-toggled', self.playback)
+
         for n, label in enumerate(self.window.labels):
+            lines[n] = lines[n].replace('&', '&amp;')
             label.set_markup('<b><big>' + lines[n] + '</big></b>')
         return True
+
+    @GObject.Signal(name='play_toggled',
+                    flags=GObject.SignalFlags.RUN_LAST,
+                    return_type=str,
+                    arg_types=(str,),
+                    accumulator=GObject.signal_accumulator_true_handled)
+    def play_toggled(self, state, *args):
+        # print('Helloooooooooooo!')
+        return False
+
+    def get_zones(self):
+        zones = self.get_features()['zone']
+        for zone in zones:
+            print(zone['id'])
+
+    def zone(self, zone='main'):
+        print(self.get_features()['zone'][0])
+        print('')
+        self.get_zones()
+
+    def get_zone_obj(self, zone='main'):
+        return self.zones[zone]
 
 
 class YAV(YamahaAV, GObject.GObject):
@@ -251,16 +304,14 @@ class YAV(YamahaAV, GObject.GObject):
 
     def monitor(self):
         print('monitor')
-        GLib.timeout_add_seconds(2, self.checkit)
+        GLib.timeout_add_seconds(1, self.checkit)
 
     def checkit(self):
         self.state = boolit(self.get_status_string('Power'))
         if self.state != self.prev_state:
             self.emit('changed', self.state)
         volume = self.get_volume()
-        print('volume in checkit    ', volume)
         if self.window.volSlider.get_value() != volume:
-            print('volume at ', volume)
             self.emit('adjust', volume)
         return True
 
@@ -270,7 +321,6 @@ class YAV(YamahaAV, GObject.GObject):
                     arg_types=(bool,),
                     accumulator=GObject.signal_accumulator_true_handled)
     def changed(self, state, *args):
-        print(str(state) + ' hello!')
         return False
 
     @GObject.Signal(name='adjust',
@@ -279,11 +329,7 @@ class YAV(YamahaAV, GObject.GObject):
                     arg_types=(float,),
                     accumulator=GObject.signal_accumulator_true_handled)
     def adjust(self, volume, *args):
-        print('vol_adjust')
         slider_pos = round(self.window.volSlider.get_value())
-        print(slider_pos, 'slider_pos')
-        print(str(volume) + ' volume!')
-#        if self.window.vol_pressed:
         if volume > slider_pos:
             self.decrease_volume()
         elif volume < slider_pos:
@@ -293,9 +339,7 @@ class YAV(YamahaAV, GObject.GObject):
 
 
 def main():
-    win = YamaWin()
-    win.connect('destroy', Gtk.main_quit)
-    win.show_all()
+    YamaWin()
     Gtk.main()
 
 
