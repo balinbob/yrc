@@ -10,6 +10,7 @@ from gi.repository import GLib
 from slider import Slider, RadioBox
 from switches import RecvrPower, PPSwitch
 from inputs import Inputs
+from cover import Cover, get_artwork
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gdk
@@ -62,7 +63,7 @@ class YamaWin(Gtk.Window):
                         Gtk.IconSize.SMALL_TOOLBAR)
         self.volDnBtn.set_size_request(10, 10)
         slider_box = Gtk.HBox()
-        slider_box.set_size_request(320, 10)
+        slider_box.set_size_request(300, 10)
         slider_box.pack_start(self.volDnBtn, True, True, 0)
         slider_box.pack_start(self.volSlider, True, True, 0)
         slider_box.pack_start(self.volUpBtn, True, True, 0)
@@ -93,14 +94,14 @@ class YamaWin(Gtk.Window):
         self.ppSwitch.set_active(True if self.mcd.playback == 'play'
                                  else False)
         grid.attach(label, 20, 0, 1, 1)
-        grid.attach(radio_box, 8, 1, 16, 1)
+        grid.attach(radio_box, 8, 1, 14, 1)
         self.inputs = Inputs(self.mcd)
         self.inputs_box = self.inputs.cbox
         # self.inputs_box.connect('changed', self.on_inputs_changed)
         hbox = Gtk.HBox()
         hbox.pack_start(self.inputs, False, False, 6)
         hbox.pack_start(self.inputs.select_button, False, False, 4)
-        hbox.set_size_request(320, 32)
+        hbox.set_size_request(260, 32)
         grid.attach(hbox, 0, 2, 20, 1)
         self.info_box = Gtk.VBox()
         self.info_box.set_size_request(10, 10)
@@ -113,9 +114,16 @@ class YamaWin(Gtk.Window):
             hbox = Gtk.HBox()
             hbox.pack_start(self.labels[n], True, True, 4)
             self.info_box.pack_start(hbox, True, False, 8)
-
+#        url = 'http://' + self.mcd.ip_address + \
+#              self.mcd.get_play_info().get('albumart_url')
+        self.cover = Cover(self.mcd)
+        spacer = Gtk.VBox()
+        spacer.set_size_request(20, 100)
+        grid.attach(self.cover, 0, 3, 8, 2)
+        grid.attach(spacer, 10, 3, 20, 1)
 #        self.mcd.checkit()
-        grid.attach(self.info_box, 1, 3, 28, 1)
+        grid.attach(self.info_box, 9, 4, 20, 1)
+        self.grid = grid
         print('---')
         self.volSlider.set_value(self.yav.get_volume())
         self.recvPower.set_state(boolit(self.recvState))
@@ -125,6 +133,8 @@ class YamaWin(Gtk.Window):
         self.mcd.connect('play-toggled',
                          self.on_play_toggled,
                          self.mcd.playback)
+        self.mcd.connect('artwork-changed',
+                         self.on_artwork_changed)
         self.recvPower.connect('state-set', self.pwr_cb)
         self.volhandler = self.volSlider.connect('value-changed',
                                                  self.volslider_changed)
@@ -159,13 +169,9 @@ class YamaWin(Gtk.Window):
 #        thread.daemon = True
 #        thread.start()
 
-    '''
-    def max_radio_toggled(self, radio, float, slider, *args):
-        if radio.get_active():
-            print(float)
-            print(slider)
-            slider.set_fill_level(float)
-'''
+    def on_artwork_changed(self, mcd, *args):
+        pixbuf = get_artwork(mcd)
+        self.cover.cover.set_from_pixbuf(pixbuf)
 
     def on_play_toggled(self, mcd, status=None, *args):
         #        print('        play_toggled')
@@ -274,6 +280,7 @@ class MCD(McDevice, GObject.GObject):
         info = self.get_play_info()
         self.playback = info.get('playback')
         self.prev_playback = self.playback
+        self.art_url = ''
 
     def monitor(self):
         GLib.timeout_add_seconds(1, self.checkit)
@@ -289,6 +296,10 @@ class MCD(McDevice, GObject.GObject):
             self.prev_playback = self.playback
             self.emit('play-toggled', self.playback)
 
+        if info.get('albumart_url') != self.art_url:
+            self.art_url = info.get('albumart_url')
+            self.emit('artwork-changed', '')
+
         for n, label in enumerate(self.window.labels):
             lines[n] = lines[n].replace('&', '&amp;')
             label.set_markup('<b><big>' + lines[n] + '</big></b>')
@@ -300,6 +311,15 @@ class MCD(McDevice, GObject.GObject):
                     arg_types=(str,),
                     accumulator=GObject.signal_accumulator_true_handled)
     def play_toggled(self, state, *args):
+        # print('Helloooooooooooo!')
+        return False
+
+    @GObject.Signal(name='artwork-changed',
+                    flags=GObject.SignalFlags.RUN_LAST,
+                    return_type=str,
+                    arg_types=(str,),
+                    accumulator=GObject.signal_accumulator_true_handled)
+    def artwork_changed(self, state, *args):
         # print('Helloooooooooooo!')
         return False
 
