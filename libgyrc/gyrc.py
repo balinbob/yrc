@@ -7,7 +7,7 @@ from pymusiccast import McDevice
 import gi
 from gi.repository import GObject
 from gi.repository import GLib
-from slider import Slider
+from slider import Slider, RadioBox
 from switches import RecvrPower, PPSwitch
 from inputs import Inputs
 gi.require_version('Gtk', '3.0')
@@ -52,7 +52,7 @@ class YamaWin(Gtk.Window):
         hbox.pack_start(self.recvPower, True, False, 32)
         grid.attach(hbox, 1, 0, 1, 1)
         self.volSlider = Slider(-80, 0.0)
-        self.volSlider.set_size_request(300, 10)
+        # self.volSlider.set_size_request(300, 10)
         self.volUpBtn = Gtk.Button.new_from_icon_name(
                         Gtk.STOCK_GO_FORWARD,
                         Gtk.IconSize.SMALL_TOOLBAR)
@@ -61,12 +61,29 @@ class YamaWin(Gtk.Window):
                         Gtk.STOCK_GO_BACK,
                         Gtk.IconSize.SMALL_TOOLBAR)
         self.volDnBtn.set_size_request(10, 10)
-
         slider_box = Gtk.HBox()
         slider_box.set_size_request(320, 10)
         slider_box.pack_start(self.volDnBtn, True, True, 0)
         slider_box.pack_start(self.volSlider, True, True, 0)
         slider_box.pack_start(self.volUpBtn, True, True, 0)
+
+        radio_box = RadioBox(self.volSlider)
+
+        '''
+        radio_box = Gtk.HBox()
+        radio_box.set_size_request(260, 15)
+        radio_box.pack_start(Gtk.Label(label='max vol: '), False, False, 0)
+        radio_group = []
+        radio = None
+        for n, val in enumerate([-30.0, -20.0, -10.0, 0.0]):
+            radio = Gtk.RadioButton.new_from_widget(radio)
+            radio.connect('toggled',
+                          self.max_radio_toggled,
+                          val,
+                          self.volSlider)
+            radio_group.append(radio)
+            radio_box.pack_start(radio, False, False, 8)
+'''
 
         grid.attach(slider_box, 2, 0, 15, 1)
         self.ppSwitch = PPSwitch(self.mcd)
@@ -76,12 +93,12 @@ class YamaWin(Gtk.Window):
         self.ppSwitch.set_active(True if self.mcd.playback == 'play'
                                  else False)
         grid.attach(label, 20, 0, 1, 1)
-        grid.attach(vspacer, 0, 1, 20, 1)
+        grid.attach(radio_box, 8, 1, 16, 1)
         self.inputs = Inputs(self.mcd)
         self.inputs_box = self.inputs.cbox
         # self.inputs_box.connect('changed', self.on_inputs_changed)
         hbox = Gtk.HBox()
-        hbox.pack_start(self.inputs, False, False, 4)
+        hbox.pack_start(self.inputs, False, False, 6)
         hbox.pack_start(self.inputs.select_button, False, False, 4)
         hbox.set_size_request(320, 32)
         grid.attach(hbox, 0, 2, 20, 1)
@@ -141,6 +158,14 @@ class YamaWin(Gtk.Window):
 #        thread = threading.Thread(target=self.ymon.run)
 #        thread.daemon = True
 #        thread.start()
+
+    '''
+    def max_radio_toggled(self, radio, float, slider, *args):
+        if radio.get_active():
+            print(float)
+            print(slider)
+            slider.set_fill_level(float)
+'''
 
     def on_play_toggled(self, mcd, status=None, *args):
         #        print('        play_toggled')
