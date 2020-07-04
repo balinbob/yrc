@@ -24,6 +24,7 @@ class Slider(Gtk.Scale, Gtk.Range):
         self.set_fill_level(-30)
         self.set_has_origin(False)
         self.set_show_fill_level(True)
+        self.set_can_focus(False)
         for n in range(-80, 0, 2):
             self.add_mark(n, Gtk.PositionType.TOP)
 
@@ -40,7 +41,8 @@ class RadioBox(Gtk.HBox):
                           self.max_radio_toggled,
                           val,
                           slider)
-            self.pack_start(radio, False, False, 12)
+            self.pack_start(radio, False, False, 10)
+            radio.set_can_focus(False)
 
     def max_radio_toggled(self, radio, val, slider):
         if radio.get_active():

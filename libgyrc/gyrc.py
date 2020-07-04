@@ -23,6 +23,12 @@ def boolit(state):
     return (True if state == 'On' else False)
 
 
+def format_time(seconds):
+    min = int(seconds/60)
+    sec = seconds - (min * 60)
+    return ('%02d:%02d' % (min, sec))
+
+
 class YamaWin(Gtk.Window):
     ip = '192.168.1.130'
     vol_pressed = False
@@ -69,23 +75,6 @@ class YamaWin(Gtk.Window):
         slider_box.pack_start(self.volUpBtn, True, True, 0)
 
         radio_box = RadioBox(self.volSlider)
-
-        '''
-        radio_box = Gtk.HBox()
-        radio_box.set_size_request(260, 15)
-        radio_box.pack_start(Gtk.Label(label='max vol: '), False, False, 0)
-        radio_group = []
-        radio = None
-        for n, val in enumerate([-30.0, -20.0, -10.0, 0.0]):
-            radio = Gtk.RadioButton.new_from_widget(radio)
-            radio.connect('toggled',
-                          self.max_radio_toggled,
-                          val,
-                          self.volSlider)
-            radio_group.append(radio)
-            radio_box.pack_start(radio, False, False, 8)
-'''
-
         grid.attach(slider_box, 2, 0, 15, 1)
         self.ppSwitch = PPSwitch(self.mcd)
         grid.attach(self.ppSwitch, 19, 0, 1, 1)
@@ -101,12 +90,12 @@ class YamaWin(Gtk.Window):
         hbox = Gtk.HBox()
         hbox.pack_start(self.inputs, False, False, 6)
         hbox.pack_start(self.inputs.select_button, False, False, 4)
-        hbox.set_size_request(260, 32)
-        grid.attach(hbox, 0, 2, 20, 1)
+        hbox.set_size_request(160, 32)
+        grid.attach(hbox, 0, 2, 12, 1)
         self.info_box = Gtk.VBox()
         self.info_box.set_size_request(10, 10)
         self.labels = []
-        for n in range(3):
+        for n in range(4):
             self.labels.append(Gtk.Label())
             self.labels[n].set_max_width_chars(65)
             self.labels[n].set_halign(Gtk.Align.START)
@@ -114,8 +103,7 @@ class YamaWin(Gtk.Window):
             hbox = Gtk.HBox()
             hbox.pack_start(self.labels[n], True, True, 4)
             self.info_box.pack_start(hbox, True, False, 8)
-#        url = 'http://' + self.mcd.ip_address + \
-#              self.mcd.get_play_info().get('albumart_url')
+
         self.cover = Cover(self.mcd)
         spacer = Gtk.VBox()
         spacer.set_size_request(20, 100)
@@ -184,8 +172,7 @@ class YamaWin(Gtk.Window):
         model = input_box.get_model()
         active = input_box.get_active()
         service = model[active][1]
-        print(service)
-        # self.mcd.zone()
+        # print(service)
         main = self.mcd.get_zone_obj('main')
         main.set_input(service)
 
@@ -247,7 +234,7 @@ class YMonitor(McDevice):
         self.new_info = self.get_play_info()
         self.info = self.new_info
         self.main_zone = self.zones.get('main')
-        self.handle_status()
+        # self.handle_status()
 
     def run(self):
         while True:
@@ -260,14 +247,14 @@ class YMonitor(McDevice):
                     for item in self.new_info:
                         if 'time' in item:
                             continue
-                        value = self.new_info.get(item)
-                        if value != self.info.get(item):
-                            print('%s:  %s' % (item, value))
+                        # value = self.new_info.get(item)
+                        # if value != self.info.get(item):
+                            # print('%s:  %s' % (item, value))
                     self.info = self.new_info
 
             if b'zone' in self.msg:
                 print('                        zone')
-                print(self.main_zone.get_status())
+                # print(self.main_zone.get_status())
 
         return False
 
@@ -281,6 +268,7 @@ class MCD(McDevice, GObject.GObject):
         self.playback = info.get('playback')
         self.prev_playback = self.playback
         self.art_url = ''
+        self.zone_obj = self.get_zone_obj()
 
     def monitor(self):
         GLib.timeout_add_seconds(1, self.checkit)
@@ -291,6 +279,10 @@ class MCD(McDevice, GObject.GObject):
         lines.append(info.get('artist'))
         lines.append(info.get('album'))
         lines.append(info.get('track'))
+        play_time = info.get('play_time')
+        if play_time:
+            play_time = format_time(play_time)
+            lines.append('play time:  %s' % str(play_time))
         if info.get('playback') != self.prev_playback:
             self.playback = info.get('playback')
             self.prev_playback = self.playback
@@ -301,8 +293,11 @@ class MCD(McDevice, GObject.GObject):
             self.emit('artwork-changed', '')
 
         for n, label in enumerate(self.window.labels):
-            lines[n] = lines[n].replace('&', '&amp;')
-            label.set_markup('<b><big>' + lines[n] + '</big></b>')
+            try:
+                lines[n] = lines[n].replace('&', '&amp;')
+                label.set_markup('<b><big>' + lines[n] + '</big></b>')
+            except IndexError:
+                pass
         return True
 
     @GObject.Signal(name='play_toggled',
@@ -329,8 +324,8 @@ class MCD(McDevice, GObject.GObject):
             print(zone['id'])
 
     def zone(self, zone='main'):
-        print(self.get_features()['zone'][0])
-        print('')
+        # print(self.get_features()['zone'][0])
+        # print('')
         self.get_zones()
 
     def get_zone_obj(self, zone='main'):
@@ -340,7 +335,6 @@ class MCD(McDevice, GObject.GObject):
 class YAV(YamahaAV, GObject.GObject):
     def __init__(self, window, ip):
         YamahaAV.__init__(self, ip)
-#        McDevice.__init__(self, ip)
         GObject.GObject.__init__(self)
         self.window = window
         self.state = self.get_status_string('Power')
@@ -348,7 +342,7 @@ class YAV(YamahaAV, GObject.GObject):
         self.powchanged_handler = self.connect('changed', window.set_power)
 
     def monitor(self):
-        print('monitor')
+        # print('monitor')
         GLib.timeout_add_seconds(1, self.checkit)
 
     def checkit(self):

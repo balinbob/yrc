@@ -17,11 +17,15 @@ def get_artwork(mcd):
     with open('/tmp/cover', 'wb') as f:
         f.write(r.content)
         r.close()
-    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                filename='/tmp/cover',
-                width=250,
-                height=250,
-                preserve_aspect_ratio=True)
+    pixbuf = None
+    try:
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    filename='/tmp/cover',
+                    width=250,
+                    height=250,
+                    preserve_aspect_ratio=True)
+    except Exception as e:
+        print(e)
     return pixbuf
 
 

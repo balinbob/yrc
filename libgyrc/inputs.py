@@ -3,6 +3,7 @@
 # from pymusiccast import McDevice
 import sys
 import gi
+from gi.repository import GLib
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
@@ -17,9 +18,10 @@ class Inputs(Gtk.VBox):
     def __init__(self, mcd):
         Gtk.VBox.__init__(self)
         self.mcd = mcd
-        input_list = get_input_list(mcd)
+        playing_input = self.mcd.get_status()['input']
+        self.input_list = get_input_list(mcd)
         store = Gtk.ListStore(int, str)
-        for n, item in enumerate(input_list):
+        for n, item in enumerate(self.input_list):
             store.append([n, item])
         self.cbox = Gtk.ComboBox.new_with_model(store)
         cell = Gtk.CellRendererText()
@@ -27,22 +29,34 @@ class Inputs(Gtk.VBox):
         self.cbox.add_attribute(cell, 'text', 1)
         self.pack_start(self.cbox, False, False, 0)
         self.select_button = Gtk.Button(label='<< Select ')
+        self.cbox.set_active(self.input_list.index(playing_input))
         self.cbox.connect('changed', self.on_changed, self.select_button)
         self.select_button.connect('clicked', self.on_select)
         self.select_button.set_no_show_all(True)
 
     def on_changed(self, combo, button, *args):
         vis = button.get_visible()
-        text = self.get_active_text(combo)
-        if vis and (text == self.mcd.get_status().get('input')):
+        self.text = self.get_active_text(combo)
+        if vis and (self.text == self.mcd.get_status().get('input')):
             button.hide()
         elif not vis:
             button.show()
+        GLib.timeout_add_seconds(5, self.reset)
+
+    def reset(self):
+        print('trying to reset')
+        playing_input = self.mcd.get_status()['input']
+        print(self.get_active_text(self.cbox))
+        print(playing_input)
+        if self.get_active_text(self.cbox) !=  \
+                playing_input:
+            self.cbox.set_active(self.input_list.index(playing_input))
+        return False
 
     def on_select(self, button):
-        input_selected = self.get_active_text(self.cbox)
+        self.input_selected = self.get_active_text(self.cbox)
         main = self.mcd.get_zone_obj('main')
-        main.set_input(input_selected)
+        main.set_input(self.input_selected)
         button.hide()
 
     def get_active_text(self, combo, *args):
