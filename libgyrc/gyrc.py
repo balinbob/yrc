@@ -293,7 +293,10 @@ class MCD(McDevice, GObject.GObject):
         play_time = info.get('play_time')
         if play_time:
             play_time = format_time(play_time)
-            lines.append('play time:  %s' % str(play_time))
+            total_time = info.get('total_time')
+            total_time = format_time(total_time)
+            lines.append('play time:  %s / %s' %
+                         (str(play_time), str(total_time)))
         if info.get('playback') != self.prev_playback:
             self.playback = info.get('playback')
             self.prev_playback = self.playback
@@ -387,53 +390,6 @@ class MCD(McDevice, GObject.GObject):
 
     def get_zone_obj(self, zone='main'):
         return self.zones[zone]
-
-
-'''
-class YAV(YamahaAV, GObject.GObject):
-    def __init__(self, window, ip):
-        YamahaAV.__init__(self, ip)
-        GObject.GObject.__init__(self)
-        self.window = window
-        self.state = self.get_status_string('Power')
-        self.prev_state = self.state
-        self.powchanged_handler = self.connect('changed', window.set_power)
-
-    def monitor(self):
-        # print('monitor')
-        GLib.timeout_add_seconds(1, self.checkit)
-
-    def checkit(self):
-        self.state = boolit(self.get_status_string('Power'))
-        if self.state != self.prev_state:
-            self.emit('changed', self.state)
-        volume = self.get_volume()
-        if self.window.volSlider.get_value() != volume:
-            self.emit('adjust', volume)
-        return True
-
-    @GObject.Signal(name='changed',
-                    flags=GObject.SignalFlags.RUN_LAST,
-                    return_type=bool,
-                    arg_types=(bool,),
-                    accumulator=GObject.signal_accumulator_true_handled)
-    def changed(self, state, *args):
-        return False
-
-    @GObject.Signal(name='adjust',
-                    flags=GObject.SignalFlags.RUN_LAST,
-                    return_type=float,
-                    arg_types=(float,),
-                    accumulator=GObject.signal_accumulator_true_handled)
-    def adjust(self, volume, *args):
-        slider_pos = round(self.window.volSlider.get_value())
-        if volume > slider_pos:
-            self.decrease_volume()
-        elif volume < slider_pos:
-            self.increase_volume()
-
-        return True
-'''
 
 
 def main():

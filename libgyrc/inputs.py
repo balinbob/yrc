@@ -30,27 +30,31 @@ class Inputs(Gtk.VBox):
         self.pack_start(self.cbox, False, False, 0)
         self.select_button = Gtk.Button(label='<< Select ')
         self.cbox.set_active(self.input_list.index(playing_input))
-        self.cbox.connect('changed', self.on_changed, self.select_button)
+        self.cb_id = self.cbox.connect('changed',
+                                       self.on_changed,
+                                       self.select_button)
         self.select_button.connect('clicked', self.on_select)
         self.select_button.set_no_show_all(True)
 
     def on_changed(self, combo, button, *args):
-        vis = button.get_visible()
+        button_visible = button.get_visible()
         self.text = self.get_active_text(combo)
-        if vis and (self.text == self.mcd.get_status().get('input')):
+        if button_visible and \
+                (self.text == self.mcd.get_status().get('input')):
             button.hide()
-        elif not vis:
+        elif not button_visible:
             button.show()
-        GLib.timeout_add_seconds(5, self.reset)
+            GLib.timeout_add_seconds(10, self.reset, button)
 
-    def reset(self):
+    def reset(self, button):
         print('trying to reset')
         playing_input = self.mcd.get_status()['input']
         print(self.get_active_text(self.cbox))
         print(playing_input)
-        if self.get_active_text(self.cbox) !=  \
-                playing_input:
-            self.cbox.set_active(self.input_list.index(playing_input))
+        if self.get_active_text(self.cbox) != playing_input:
+            with self.cbox.handler_block(self.cb_id):
+                self.cbox.set_active(self.input_list.index(playing_input))
+                button.hide()
         return False
 
     def on_select(self, button):
