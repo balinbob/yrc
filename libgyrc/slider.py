@@ -21,7 +21,7 @@ class Slider(Gtk.Scale, Gtk.Range):
         self.max = max
         self.set_orientation(Gtk.Orientation.HORIZONTAL)
         self.set_size_request(320, 10)
-        self.set_fill_level(-30)
+        self.set_fill_level(-36.0)
         self.set_has_origin(False)
         self.set_show_fill_level(True)
         self.set_can_focus(False)
@@ -35,7 +35,10 @@ class RadioBox(Gtk.HBox):
         self.set_size_request(260, 10)
         self.pack_start(Gtk.Label(label='max vol: '), False, False, 0)
         radio = None
-        for n, val in enumerate((-36.0, -24.0, -12.0, 0.0)):
+        self.radio_values = (-36.0, -24.0, -12.0, 0.0)
+        self.radio_value = {}
+        self.active_limit = -36.0
+        for n, val in enumerate(self.radio_values):
             radio = Gtk.RadioButton.new_from_widget(radio)
             radio.connect('toggled',
                           self.max_radio_toggled,
@@ -43,10 +46,15 @@ class RadioBox(Gtk.HBox):
                           slider)
             self.pack_start(radio, False, False, 10)
             radio.set_can_focus(False)
+            self.radio_value.update({n: val})
 
     def max_radio_toggled(self, radio, val, slider):
         if radio.get_active():
             slider.set_fill_level(val)
+            self.active_limit = val
+
+    def get_radio_value(self):
+        return self.active_limit
 
 
 class Win(Gtk.Window):
