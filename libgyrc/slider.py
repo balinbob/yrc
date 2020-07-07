@@ -32,7 +32,7 @@ class Slider(Gtk.Scale, Gtk.Range):
 class RadioBox(Gtk.HBox):
     def __init__(self, slider):
         Gtk.HBox.__init__(self)
-        self.set_size_request(260, 10)
+        self.set_size_request(200, 10)
         self.pack_start(Gtk.Label(label='max vol: '), False, False, 0)
         radio = None
         self.radio_values = (-36.0, -24.0, -12.0, 0.0)
@@ -44,7 +44,7 @@ class RadioBox(Gtk.HBox):
                           self.max_radio_toggled,
                           val,
                           slider)
-            self.pack_start(radio, False, False, 10)
+            self.pack_start(radio, False, False, 11)
             radio.set_can_focus(False)
             self.radio_value.update({n: val})
 
