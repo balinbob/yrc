@@ -3,6 +3,7 @@
 import os
 import sys
 import gi
+from gi.repository import GLib
 gi.require_version('Gtk', '3.0')
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import GdkPixbuf
@@ -42,6 +43,22 @@ class PlayerButtons(Gtk.ButtonBox):
                          self.on_playback_changed,
                          self.mcd.playback)
 
+        GLib.timeout_add_seconds(1, self.initialize)
+
+    def initialize(self):
+        print('initializing')
+        info = self.mcd.get_play_info()
+        if info['playback'] == 'play':
+            self.play.set_active(True)
+            self.pause.set_active(False)
+        elif info['playback'] == 'pause':
+            with self.pause.handler_block(self.pause_id):
+                self.pause.set_active(True)
+        elif info['playback'] == 'stop':
+            with self.stop.handler_block(self.stop_id):
+                self.stop.set_active(True)
+        return False
+
     def on_playback_changed(self, mcd, playback, arg):
         print(playback)
         print(arg)
@@ -76,7 +93,7 @@ class PlayerButtons(Gtk.ButtonBox):
         else:
             print('play')
             self.mcd.set_playback('play')
-            with self.play.handler_block(self.play_id):
+            with self.pause.handler_block(self.pause_id):
                 self.play.set_active(True)
 
     def on_stop_button(self, button, arg=None):
@@ -99,6 +116,9 @@ class PlayerButtons(Gtk.ButtonBox):
                 self.pause.set_active('False')
             with self.play.handler_block(self.play_id):
                 self.play.set_active('False')
+        if self.mcd.get_play_info()['playback'] == 'play':
+            with self.play.handler_block(self.play_id):
+                self.pause.set_active('False')
 
 
 def main():
