@@ -36,18 +36,16 @@ def db2vol(db):
 
 
 class YamaWin(Gtk.Window):
-    ip = '192.168.1.130'
+    ip_address = None
     vol_pressed = False
 
     def __init__(self):
 
         Gtk.Window.__init__(self, title='Gyrc')
         self.connect('destroy', Gtk.main_quit)
-        self.mcd = MCD(self, self.ip)
-#        self.ymon = YMonitor()
-#        print(self.ymon.info)
-
         config_button = CfgButton()
+        self.ip_address = config_button.get_ip_address()
+        self.mcd = MCD(self, self.ip_address)
         self.recvState = self.mcd.get_power_state()
         self.recvPower = RecvrPower(self.mcd)
         label = Gtk.Label.new_with_mnemonic('P_ower')
@@ -80,7 +78,7 @@ class YamaWin(Gtk.Window):
         slider_box.pack_start(self.volUpBtn, False, False, 0)
 
         grid.attach(slider_box, 2, 0, 15, 2)
-        grid.attach(config_button, 18, 0, 1, 1)
+        # grid.attach(config_button, 18, 0, 1, 1)
         self.inputs = Inputs(self.mcd)
         self.inputs_box = self.inputs.cbox
         self.radio_box = RadioBox(self.volSlider)
