@@ -1,0 +1,28 @@
+You must install the following packages to use Gyrc (if any are not already installed):
+
+python3
+python3-pygobject OR python3-gi (depending on your distribution)
+python3-requests
+python3-pip
+git
+
+The library which powers Gyrc is pymusiccast, to install it:
+
+pip3 install pymusiccast
+
+Then, in the folder you wish to install to:
+
+git clone https://github.com/balinbob/yrc
+
+This will make the yrc (yamaha receiver control) folder.   From it, run:
+./libgyrc/gyrc.py
+
+or:
+ln -s PATH_TO_LIBGYRC/gyrc.py ~/.local/bin/gyrc
+
+and make sure ~/.local/bin is in your executable PATH.
+
+
+
+To find the ip address of your receiver, you can search for it on the lan, or
+use the receiver's on-screen-display.
