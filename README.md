@@ -1,5 +1,8 @@
 GTK+ graphical interface for controlling and streaming to Yamaha® network receivers using pymusiccast
 
+Gyrc is a 3rd party open-source app to assist users in the remote control of Yamaha AV receivers.  It
+is not affiliated in any way with that or any other company.
+
 "Yamaha" is a registered trademark of Yamaha Corporation.
 
 ![picture](images/gyrc02.png)
