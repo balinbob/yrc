@@ -1,10 +1,11 @@
 #### Gyrc
 
-#### GNOME Yamaha Receiver Control
+#### GNOME Receiver Control
 
 
-GTK+ graphical interface for controlling and streaming to Yamaha network receivers using pymusiccast
+GTK+ graphical interface for controlling and streaming to Yamaha® network receivers using pymusiccast
 
+"Yamaha" is a registered trademark of Yamaha Corporation.
 
 ![picture](images/gyrc-on-debian10-cinnamon-themed.png)
 
