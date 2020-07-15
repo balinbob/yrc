@@ -1,3 +1,8 @@
+#### Gyrc
+
+#### GNOME Yamaha Receiver Control
+
+
 GTK+ graphical interface for controlling and streaming to Yamaha network receivers using pymusiccast
 
 
