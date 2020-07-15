@@ -31,13 +31,18 @@ class PlayerButtons(Gtk.ButtonBox):
             img = Gtk.Image.new_from_pixbuf(pixbuf)
             button.set_image(img)
             self.pack_start(button, False, False, 0)
-        self.pause = self.buttonlist[3]
+
+        self.back = self.buttonlist[0]
         self.stop = self.buttonlist[1]
         self.play = self.buttonlist[2]
+        self.pause = self.buttonlist[3]
+        self.next = self.buttonlist[4]
 
+        self.back_id = self.back.connect('toggled', self.on_back_button)
         self.pause_id = self.pause.connect('toggled', self.on_pause_button)
         self.stop_id = self.stop.connect('toggled', self.on_stop_button)
         self.play_id = self.play.connect('toggled', self.on_play_button)
+        self.next_id = self.next.connect('toggled', self.on_next_button)
 
         self.mcd.connect('playback-changed',
                          self.on_playback_changed,
@@ -80,6 +85,27 @@ class PlayerButtons(Gtk.ButtonBox):
         self.pause.handler_unblock(self.pause_id)
         self.stop.handler_unblock(self.stop_id)
         self.play.handler_unblock(self.play_id)
+
+    def on_next_button(self, button, arg=None):
+        print('next button')
+        if button.get_active():
+            print('next')
+            self.mcd.set_playback('next')
+            with self.next.handler_block(self.next_id):
+                self.next.set_active(False)
+        else:
+            print('next button up')
+
+    def on_back_button(self, button, arg=None):
+        print('back button')
+        print('arg is %s' % arg)
+        if button.get_active():
+            print('back')
+            self.mcd.set_playback('previous')
+            with self.back.handler_block(self.back_id):
+                self.back.set_active(False)
+        else:
+            print('back button up')
 
     def on_pause_button(self, button, arg=None):
         print('pause button')
