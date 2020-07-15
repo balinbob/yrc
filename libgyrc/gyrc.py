@@ -17,17 +17,6 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 gi.require_version('Pango', '1.0')
 from gi.repository.Pango import EllipsizeMode
-# ip = '192.168.1.130'
-
-
-def boolit(state):
-    return (True if state == 'on' else False)
-
-
-def format_time(seconds):
-    min = int(seconds/60)
-    sec = seconds - (min * 60)
-    return ('%02d:%02d' % (min, sec))
 
 
 def db2vol(db):
