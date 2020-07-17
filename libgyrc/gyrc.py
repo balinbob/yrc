@@ -18,6 +18,10 @@ from gi.repository import Gdk
 gi.require_version('Pango', '1.0')
 from gi.repository.Pango import EllipsizeMode
 
+my_ips = ['192.168.1.130',
+          '192.168.1.118',
+          '192.168.1.229']
+
 
 def db2vol(db):
     return 161+(db * 2)
@@ -26,9 +30,10 @@ def db2vol(db):
 class YamaWin(Gtk.Window):
     ip_address = None
     vol_pressed = False
+    ips = []
 
     def __init__(self):
-
+        print(self.ips)
         Gtk.Window.__init__(self, title='Gyrc')
         self.connect('destroy', Gtk.main_quit)
         config_button = CfgButton()

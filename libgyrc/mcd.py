@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import sys
 from pymusiccast import McDevice
+from pymusiccast.exceptions import YMCInitError
 from gi.repository import GObject
 from gi.repository import GLib
 
@@ -20,8 +22,25 @@ def db2vol(db):
 
 
 class MCD(McDevice, GObject.GObject):
-    def __init__(self, window, ip):
-        McDevice.__init__(self, ip)
+    def __init__(self, window, ip, udp_port=None):
+        if udp_port:
+            try:
+                McDevice.__init__(self, ip, udp_port)
+            except YMCInitError as e:
+                raise YMCInitError(e)
+
+        for udp_port in range(5010, 5099):
+            try:
+                print('trying port %d' % udp_port)
+                McDevice.__init__(self, ip, udp_port)
+                print('GOT IT!')
+                break
+            except YMCInitError as e:
+                if udp_port == 5099:
+                    print('cannot establish connection to %s' % ip)
+                    print(e)
+                    sys.exit(2)
+
         GObject.GObject.__init__(self)
         self.window = window
         info = self.get_play_info()
