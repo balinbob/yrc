@@ -60,7 +60,7 @@ class MCD(McDevice, GObject.GObject):
         return status.get('actual_volume').get('value')
 
     def get_volume(self):
-        ''' return current volume in range 0-161 '''
+        ''' return current volume in range 0-161 (or max_volume) '''
         status = self.get_status()
         return status.get('volume')
 

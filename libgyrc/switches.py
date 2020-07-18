@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 import gi
+from importlib import import_module
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+Gtk = import_module('gi.repository.Gtk')
 
 
 class PPSwitch(Gtk.Switch):
@@ -31,14 +32,3 @@ class RecvrPower(Gtk.Switch):
 
     def on_clicked(self, widget, state):
         self.mcd.set_power_state(int(state))
-
-
-'''
-        print('on click, state is ' + str(state))
-        if state is True:
-            self.mcd.power_on()
-        elif state is False:
-            self.mcdi.power_standby()
-        print('just toggled button')
-        return False
-'''

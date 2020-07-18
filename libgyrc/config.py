@@ -4,25 +4,62 @@ import os
 import sys
 import shutil
 import gi
+
+from importlib import import_module
 from pymusiccast import McDevice
 from pymusiccast.exceptions import YMCInitError
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+Gtk = import_module('gi.repository.Gtk')
+
+cfg_name = os.path.expanduser('~/.gyrc/gyrc.cfg')
+cfg_path = os.path.expanduser('~/.gyrc')
+mcd_list = []
+ip_list = []
 
 
-class MainClass(object):
+class Config(object):
     def __init__(self):
         self.cfg_path = os.path.expanduser('~/.gyrc')
         self.cfg_name = os.path.expanduser('~/.gyrc/gyrc.cfg')
-        icon_dest = os.path.join(self.cfg_path, 'icons')
+        # self.icon_dest = os.path.join(self.cfg_path, 'icons')
+
+    def install_icons(self):
+        icon_dest = os.path.join(os.path.expanduser('~/.gyrc'), 'icons')
         os.makedirs(icon_dest, exist_ok=True)
         if not icon_install():
             print('unable to install icons!')
             print('Please cppy icons from program_path/images')
             print('to ~/.gyrc/icons')
             print('')
+
+    def run(self):
         window = Window()
+        window.config = self
         window.show_all()
+        Gtk.main()
+
+
+def get_config():
+    global ip_list
+    global mcd_list
+
+    try:
+        with open(cfg_name, 'r') as f:
+            ip_list = f.readlines()
+        for n, ip in enumerate(ip_list):
+            ip_list[n] = ip.strip('\n')
+        return ip_list
+    except FileNotFoundError:
+        config = Config()
+        config.run()
+    return ip_list
+
+
+def get_mcd_list():
+    if mcd_list:
+        return mcd_list
+    else:
+        return None
 
 
 def icon_install():
@@ -57,7 +94,6 @@ def icon_install():
 class WidgetBox(Gtk.VBox):
     strings = ['Receiver', '2nd device',
                '3rd device', '4th device', '5th device']
-
     ip_list = []
     entries = []
     buttons = []
@@ -88,7 +124,7 @@ class WidgetBox(Gtk.VBox):
 
     def on_button(self, button, entry, instance):
         ip = entry.get_buffer().get_text()
-        if ip not in self.ip_list:
+        if ip not in ip_list:
             validator = Ip4Validator(ip)
             if validator.result:
                 for udp_port in range(5010, 5099):
@@ -96,8 +132,8 @@ class WidgetBox(Gtk.VBox):
                         print('trying port %d' % udp_port)
                         mcd = McDevice(ip, udp_port)
                         print('Got It!')
-                        self.window.ip_list.append(ip)
-                        self.window.mcd_list.append(mcd)
+                        ip_list.append(ip)
+                        mcd_list.append(mcd)
                         break
                     except YMCInitError as e:
                         if udp_port >= 5099:
@@ -112,8 +148,8 @@ class WidgetBox(Gtk.VBox):
             entry.set_text('')
             entry.set_placeholder_text('already connected...')
             button.grab_focus()
-        if len(self.ip_list) > instance:
-            print(self.ip_list)
+        if len(ip_list) > instance:
+            print(ip_list)
             if len(self.strings) > instance:
                 self.entries[self.instance+1].show()
                 self.buttons[self.instance+1].show_now()
@@ -140,11 +176,10 @@ class Window(Gtk.Window):
     buttons = []
     boxes = []
     done = False
-    ip_list = []
-    mcd_list = []
 
     def __init__(self):
         Gtk.Window.__init__(self)
+        self.connect('destroy', Gtk.main_quit)
 
         self.cfg_path = os.path.expanduser('~/.gyrc')
         self.cfg_name = os.path.expanduser('~/.gyrc/gyrc.cfg')
@@ -152,26 +187,24 @@ class Window(Gtk.Window):
         self.frame = Gtk.VBox()
         self.frame.name = 'frame'
         self.add(self.frame)
-        self.connect('destroy', Gtk.main_quit)
         self.set_default_size(240, 20)
         self.instance = 0
         button_done = Gtk.Button(label='Done')
         button_done.connect('clicked', self.on_button_done)
         self.frame.pack_end(button_done, False, False, 12)
         for instance in range(5):
-
             widget_box = WidgetBox(self, instance)
-            # widget_box.set_no_show_all(True)
             widget_box.name = 'widget box'
             self.boxes.append(widget_box)
             self.frame.pack_start(widget_box, False, False, 8)
-            # self.frame.pack_start(vbox, False, False, 8)
         for child in self.boxes[0].get_children():
-            print(child.name)
             child.show_now()
 
     def on_button_done(self, button, *args):
         print('on done!')
+        for n, ip in enumerate(ip_list):
+            ip_list[n] = ip + '\n'
+        print(ip_list)
         if not os.path.isdir(self.cfg_path):
             try:
                 os.mkdir(self.cfg_path)
@@ -179,15 +212,17 @@ class Window(Gtk.Window):
                 print(e)
         try:
             with open(self.cfg_name, 'w') as f:
-                f.writelines(self.ip_list)
+                f.writelines(ip_list)
+        except IOError as e:
+            print(e)
         except OSError as e:
             print(e)
         self.emit('destroy')
 
 
 def main():
-    MainClass()
-    Gtk.main()
+    cfg = Config()
+    cfg.run()
 
 
 if __name__ == '__main__':

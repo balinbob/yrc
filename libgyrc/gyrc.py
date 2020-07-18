@@ -6,11 +6,14 @@ import sys
 import gi
 from gi.repository import GLib
 from mcd import MCD
+# from pymusiccast.exceptions import YMCInitError
 from slider import Slider, RadioBox
 from switches import RecvrPower
 from inputs import Inputs
 from cover import Cover, get_artwork
-from cfg_button import CfgButton
+# from cfg_button import CfgButton
+from config import get_config
+from config import get_mcd_list
 from playerbuttons import PlayerButtons
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -31,14 +34,33 @@ class YamaWin(Gtk.Window):
     ip_address = None
     vol_pressed = False
     ips = []
+    mcd_list = []
 
     def __init__(self):
         print(self.ips)
         Gtk.Window.__init__(self, title='Gyrc')
         self.connect('destroy', Gtk.main_quit)
-        config_button = CfgButton()
-        self.ip_address = config_button.get_ip_address()
-        self.mcd = MCD(self, self.ip_address)
+#        config_button = CfgButton()
+#        self.ip_address = config_button.get_ip_address()
+
+        self.ip_list = get_config()
+        # if not self.ip_list:
+        mcd_list = get_mcd_list()
+        if not mcd_list:
+            for n, ip in enumerate(self.ip_list):
+                print('ip: ', ip)
+                mcd = MCD(self, self.ip_list[n])
+                self.mcd_list.append(mcd)
+        else:
+            self.mcd_list = mcd_list
+
+        for mcdevice in self.mcd_list:
+            print('connected to %s' % mcdevice.name)
+        # sys.exit(0)
+
+        self.mcd = self.mcd_list[0]     # stub
+
+        # self.mcd = MCD(self, self.ip_address[0])
         self.recvState = self.mcd.get_power_state()
         self.recvPower = RecvrPower(self.mcd)
         label = Gtk.Label.new_with_mnemonic('P_ower')

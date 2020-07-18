@@ -3,17 +3,25 @@
 import os
 import sys
 import gi
+from importlib import import_module
 from gi.repository import GLib
 gi.require_version('Gtk', '3.0')
 gi.require_version('GdkPixbuf', '2.0')
-from gi.repository import GdkPixbuf
-from gi.repository import Gtk
+GdkPixbuf = import_module('gi.repository.GdkPixbuf')
+Gtk = import_module('gi.repository.Gtk')
 
 
 class PlayerButtons(Gtk.ButtonBox):
     icon_path = os.path.expanduser('~/.gyrc/icons/')
     icons = ('media-previous.png', 'media-stop.png', 'media-play.png',
              'media-pause.png', 'media-next.png')
+    icon_src = os.path.join(os.getcwd(), 'yrc/icons')
+    if not os.path.isdir(icon_src):
+        icon_src = os.path.join(os.getcwd(), 'icons')
+    else:
+        print('Where is the icon source path??')
+        print('Please place suitable .png files')
+        print('in %s!' % icon_path)
 
     def __init__(self, mcd):
         Gtk.ButtonBox.__init__(self)
@@ -26,6 +34,12 @@ class PlayerButtons(Gtk.ButtonBox):
             self.buttonlist.append(button)
             button.set_size_request(32, 32)
             icon = os.path.join(self.icon_path, self.icons[n])
+
+            if not os.path.isfile(icon):
+                print('where the hell is %s ??' % icon)
+                from config import icon_install
+                icon_install()
+
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
                                 icon, 36, 36, GdkPixbuf.InterpType.BILINEAR)
             img = Gtk.Image.new_from_pixbuf(pixbuf)

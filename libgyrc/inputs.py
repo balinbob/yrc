@@ -3,9 +3,10 @@
 # from pymusiccast import McDevice
 import sys
 import gi
+from importlib import import_module
 from gi.repository import GLib
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+Gtk = import_module('gi.repository.Gtk')
 
 
 def get_input_list(mcd):
