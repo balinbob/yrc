@@ -5,9 +5,12 @@ import sys
 import shutil
 import gi
 
+from ping import ping
+# from json.decoder import JSONDecodeError
 from importlib import import_module
-from pymusiccast import McDevice
-from pymusiccast.exceptions import YMCInitError
+from mcd import MCD
+# from pymusiccast import McDevice
+# from pymusiccast.exceptions import YMCInitError
 gi.require_version('Gtk', '3.0')
 Gtk = import_module('gi.repository.Gtk')
 
@@ -18,6 +21,8 @@ ip_list = []
 
 
 class Config(object):
+    window = None
+
     def __init__(self):
         self.cfg_path = os.path.expanduser('~/.gyrc')
         self.cfg_name = os.path.expanduser('~/.gyrc/gyrc.cfg')
@@ -33,26 +38,25 @@ class Config(object):
             print('')
 
     def run(self):
-        window = Window()
-        window.config = self
-        window.show_all()
+        self.window = Window()
+        self.window.config = self
+        self.window.show_all()
         Gtk.main()
 
+    def get_config(self):
+        global ip_list
+        global mcd_list
 
-def get_config():
-    global ip_list
-    global mcd_list
-
-    try:
-        with open(cfg_name, 'r') as f:
-            ip_list = f.readlines()
-        for n, ip in enumerate(ip_list):
-            ip_list[n] = ip.strip('\n')
-        return ip_list
-    except FileNotFoundError:
-        config = Config()
-        config.run()
-    return ip_list
+        try:
+            with open(cfg_name, 'r') as f:
+                ip_list = f.readlines()
+            for n, ip in enumerate(ip_list):
+                ip_list[n] = ip.strip('\n')
+        except FileNotFoundError:
+            config = Config()
+            config.run()
+        finally:
+            return ip_list
 
 
 def get_mcd_list():
@@ -92,7 +96,7 @@ def icon_install():
 
 
 class WidgetBox(Gtk.VBox):
-    strings = ['Receiver', '2nd device',
+    strings = ['Receiver', '2nd',
                '3rd device', '4th device', '5th device']
     ip_list = []
     entries = []
@@ -111,7 +115,11 @@ class WidgetBox(Gtk.VBox):
         self.entry.set_no_show_all(True)
         self.entries.append(self.entry)
         self.entry.connect('activate', self.on_entry, instance)
-        self.button = Gtk.Button(label=self.strings[instance] + ' ip address')
+
+        self.button = Gtk.Button(label='enter ' + self.strings[instance] + (' device' if instance > 0 else '') + ' ip address')
+        # self.button.set_label('enter ' + self.strings[instance] +
+        #                      ' device' if instance > 0 else '' +
+        #                      ' ip address')
         self.buttons.append(self.button)
         self.button.connect('clicked', self.on_button, self.entry, instance)
         self.button.name = ('button %d' % instance)
@@ -126,20 +134,13 @@ class WidgetBox(Gtk.VBox):
         ip = entry.get_buffer().get_text()
         if ip not in ip_list:
             validator = Ip4Validator(ip)
-            if validator.result:
-                for udp_port in range(5010, 5099):
-                    try:
-                        print('trying port %d' % udp_port)
-                        mcd = McDevice(ip, udp_port)
-                        print('Got It!')
-                        ip_list.append(ip)
-                        mcd_list.append(mcd)
-                        break
-                    except YMCInitError as e:
-                        if udp_port >= 5099:
-                            print('cannot establish connection to %s' % ip)
-                            print(e)
-                            break
+            if validator.result and ping(ip):
+                mcd = MCD(None, ip)
+                if not mcd:
+                    sys.exit(255)
+                else:
+                    ip_list.append(ip)
+                    mcd_list.append(mcd)
             else:
                 entry.set_text('')
                 entry.set_placeholder_text('enter valid ipv4 address...')
@@ -217,7 +218,7 @@ class Window(Gtk.Window):
             print(e)
         except OSError as e:
             print(e)
-        self.emit('destroy')
+        self.destroy()
 
 
 def main():

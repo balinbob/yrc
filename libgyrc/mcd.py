@@ -3,6 +3,9 @@
 import sys
 from pymusiccast import McDevice
 from pymusiccast.exceptions import YMCInitError
+from json.decoder import JSONDecodeError
+# from config import Window as config_window
+
 from gi.repository import GObject
 from gi.repository import GLib
 
@@ -23,23 +26,26 @@ def db2vol(db):
 
 class MCD(McDevice, GObject.GObject):
     def __init__(self, window, ip, udp_port=None):
-        if udp_port:
-            try:
-                McDevice.__init__(self, ip, udp_port)
-            except YMCInitError as e:
-                raise YMCInitError(e)
+#        if udp_port:
+#            try:
+#                McDevice.__init__(self, ip, udp_port)
+#            except YMCInitError as e:
+#                raise YMCInitError(e)
 
-        for udp_port in range(5010, 5099):
+        for udp_port in range(5010, 5019):
             try:
                 print('trying port %d' % udp_port)
                 McDevice.__init__(self, ip, udp_port)
-                print('GOT IT!')
+                print('Got It!')
                 break
             except YMCInitError as e:
-                if udp_port == 5099:
+                if udp_port == 5019:
                     print('cannot establish connection to %s' % ip)
                     print(e)
-                    sys.exit(2)
+                    sys.exit(255)
+            except JSONDecodeError:
+                print('device does not respond..')
+                sys.exit(255)
 
         GObject.GObject.__init__(self)
         self.window = window

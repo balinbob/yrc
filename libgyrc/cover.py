@@ -3,10 +3,11 @@
 import sys
 import requests
 import gi
+from importlib import import_module
 from pymusiccast import McDevice
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
-from gi.repository import GdkPixbuf
+Gtk = import_module('gi.repository.Gtk')
+GdkPixbuf = import_module('gi.repository.GdkPixbuf')
 
 
 def get_artwork(mcd):
@@ -14,13 +15,13 @@ def get_artwork(mcd):
             mcd.ip_address + \
             mcd.get_play_info().get('albumart_url')
     r = requests.get(url)
-    with open('/tmp/cover', 'wb') as f:
+    with open('/tmp/cover.jpg', 'wb') as f:
         f.write(r.content)
         r.close()
     pixbuf = None
     try:
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                    filename='/tmp/cover',
+                    filename='/tmp/cover.jpg',
                     width=250,
                     height=250,
                     preserve_aspect_ratio=True)

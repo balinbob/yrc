@@ -5,25 +5,30 @@ import sys
 # from yamaha_av import YamahaAV
 import gi
 from gi.repository import GLib
-from mcd import MCD
 # from pymusiccast.exceptions import YMCInitError
+from mcd import MCD
 from slider import Slider, RadioBox
 from switches import RecvrPower
 from inputs import Inputs
 from cover import Cover, get_artwork
 # from cfg_button import CfgButton
-from config import get_config
-from config import get_mcd_list
+from config import Config
+# from config import get_mcd_list
 from playerbuttons import PlayerButtons
+from importlib import import_module
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
-from gi.repository import Gdk
 gi.require_version('Pango', '1.0')
-from gi.repository.Pango import EllipsizeMode
+Gtk = import_module('gi.repository.Gtk')
+Gdk = import_module('gi.repository.Gdk')
+Pango = import_module('gi.repository.Pango')
+EllipsizeMode = Pango.EllipsizeMode
+# from gi.repository import Gtk
+# from gi.repository import Gdk
+# from gi.repository.Pango import EllipsizeMode
 
-my_ips = ['192.168.1.130',
-          '192.168.1.118',
-          '192.168.1.229']
+# my_ips = ['192.168.1.130',
+#           '192.168.1.118',
+#           '192.168.1.229']
 
 
 def db2vol(db):
@@ -40,27 +45,22 @@ class YamaWin(Gtk.Window):
         print(self.ips)
         Gtk.Window.__init__(self, title='Gyrc')
         self.connect('destroy', Gtk.main_quit)
-#        config_button = CfgButton()
-#        self.ip_address = config_button.get_ip_address()
 
-        self.ip_list = get_config()
-        # if not self.ip_list:
-        mcd_list = get_mcd_list()
-        if not mcd_list:
-            for n, ip in enumerate(self.ip_list):
-                print('ip: ', ip)
-                mcd = MCD(self, self.ip_list[n])
-                self.mcd_list.append(mcd)
-        else:
-            self.mcd_list = mcd_list
+        config = Config()
+        self.ip_list = config.get_config()
+        for n, ip in enumerate(self.ip_list):
+            self.ip_list[n] = ip.strip('\n')  # just in case
+            print('ip: ', self.ip_list[n])
+            mcd = MCD(self, self.ip_list[n])
+            self.mcd_list.append(mcd)
 
-        for mcdevice in self.mcd_list:
+        for n, mcdevice in enumerate(self.mcd_list):
             print('connected to %s' % mcdevice.name)
         # sys.exit(0)
 
         self.mcd = self.mcd_list[0]     # stub
-
-        # self.mcd = MCD(self, self.ip_address[0])
+        print(self.mcd.name)
+        print([m for m in dir(self.mcd) if 'power' in m])
         self.recvState = self.mcd.get_power_state()
         self.recvPower = RecvrPower(self.mcd)
         label = Gtk.Label.new_with_mnemonic('P_ower')

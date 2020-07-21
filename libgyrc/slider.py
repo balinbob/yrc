@@ -4,7 +4,7 @@ import sys
 import gi
 from importlib import import_module
 gi.require_version('Gtk', '3.0')
-Gtk = import_module(gi.repository.Gtk)
+Gtk = import_module('gi.repository.Gtk')
 
 
 class Slider(Gtk.Scale, Gtk.Range):
