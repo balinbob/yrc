@@ -9,6 +9,10 @@ is not affiliated in any way with that or any other company.
 
 "Yamaha" is a registered trademark of Yamaha Corporation.
 
+![picture](images/gyrc-with-sources-list.png)
+
+shot of the app showing the dropdown list for receiver sources
+
 ![picture](images/gyrc02.png)
 
 above: 2020-07-07 still heavy development
