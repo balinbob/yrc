@@ -1,20 +1,15 @@
 #!/usr/bin/env python3
 
 import sys
-# import time
-# from yamaha_av import YamahaAV
 import gi
 from gi.repository import GLib
-# from pymusiccast.exceptions import YMCInitError
-from mcd import MCD
-from slider import Slider, RadioBox
-from switches import RecvrPower
-from inputs import Inputs
-from cover import Cover, get_artwork
-# from cfg_button import CfgButton
-from config import Config
-# from config import get_mcd_list
-from playerbuttons import PlayerButtons
+from .mcd import MCD
+from .slider import Slider, RadioBox
+from .switches import RecvrPower
+from .inputs import Inputs
+from .cover import Cover, get_artwork
+from .config import Config
+from .playerbuttons import PlayerButtons
 from importlib import import_module
 gi.require_version('Gtk', '3.0')
 gi.require_version('Pango', '1.0')
@@ -22,13 +17,6 @@ Gtk = import_module('gi.repository.Gtk')
 Gdk = import_module('gi.repository.Gdk')
 Pango = import_module('gi.repository.Pango')
 EllipsizeMode = Pango.EllipsizeMode
-# from gi.repository import Gtk
-# from gi.repository import Gdk
-# from gi.repository.Pango import EllipsizeMode
-
-# my_ips = ['192.168.1.130',
-#           '192.168.1.118',
-#           '192.168.1.229']
 
 
 def db2vol(db):

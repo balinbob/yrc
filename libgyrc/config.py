@@ -5,12 +5,9 @@ import sys
 import shutil
 import gi
 
-from ping import ping
-# from json.decoder import JSONDecodeError
+from .ping import ping
+from .mcd import MCD
 from importlib import import_module
-from mcd import MCD
-# from pymusiccast import McDevice
-# from pymusiccast.exceptions import YMCInitError
 gi.require_version('Gtk', '3.0')
 Gtk = import_module('gi.repository.Gtk')
 
