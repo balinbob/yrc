@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 from pymusiccast import McDevice
 from pymusiccast.exceptions import YMCInitError
 from json.decoder import JSONDecodeError
-# from config import Window as config_window
+from .config import Config
 
 from gi.repository import GObject
 from gi.repository import GLib
@@ -20,23 +21,71 @@ def format_time(seconds):
     return ('%02d:%02d' % (min, sec))
 
 
-def db2vol(db):
-    return 161+(db * 2)
+cfg_name = os.path.expanduser('~/.gyrc/gyrc.cfg')
+ip_list = []
+
+
+class DeviceList(list):
+    zone_list = []
+
+    def __init__(self, window):
+        list.__init__(self)
+        config = Config()
+        ip_list = config.get_config()
+
+        for ip in ip_list:
+            ip = ip.strip('\n')
+            mcd = MCD(window, ip)
+            self.add(mcd)
+
+    def add(self, mcd):
+        self.append(mcd)
+
+    def devices_get(self):
+        return self
+
+    def get_n_devices(self):
+        return len(self)
+
+    def get_device(self, n=0):
+        try:
+            return self[n]
+        except IndexError:
+            return None
+
+    def get_name_for_device(self, n=0):
+        return self[n].name
+
+    def get_power_for_device(self, n=0):
+        return self[n].get_status()['power']
+
+    def get_volume_for_device(self, n=0):
+        return self[n].get_status()['volume']
+
+    def get_max_volume_for_device(self, n=0):
+        return self[n].get_status()['max_volume']
+
+    def get_zone_for_device(self, n=0):
+        return self[n].zones['main']
+
+    def get_zone_list(self):
+        for n, device in enumerate(self):
+            print('')
+            # print(device.zones['main'])
+            self.zone_list.append(device.zones['main'])
+        return self.zone_list
 
 
 class MCD(McDevice, GObject.GObject):
-    def __init__(self, window, ip, udp_port=None):
-#        if udp_port:
-#            try:
-#                McDevice.__init__(self, ip, udp_port)
-#            except YMCInitError as e:
-#                raise YMCInitError(e)
+    # mcd_list = DeviceList()
 
+    def __init__(self, window, ip, udp_port=None):
         for udp_port in range(5010, 5019):
             try:
                 print('trying port %d' % udp_port)
                 McDevice.__init__(self, ip, udp_port)
                 print('Got It!')
+
                 break
             except YMCInitError as e:
                 if udp_port == 5019:
@@ -49,6 +98,7 @@ class MCD(McDevice, GObject.GObject):
 
         GObject.GObject.__init__(self)
         self.window = window
+        # self.mcd_list.add(self)
         info = self.get_play_info()
         self.playback = info.get('playback')
         self.prev_playback = self.playback
@@ -56,9 +106,23 @@ class MCD(McDevice, GObject.GObject):
         self.art_url = ''
         self.power_state = boolit(self.get_status().get('power'))
         self.volume = self.get_volume()
-        # print(self.volume)
-
+        self.max_volume = self.get_max_volume()
+        # self.volume_one_percent = self.get_volume_percent()
+        print('max volume for this device is: ', self.max_volume)
         self.zone_obj = self.get_zone_obj()
+
+    def db2vol(self, db):
+        return self.max_volume+(db * 2)
+
+    def set_window(self, window):
+        self.window = window
+
+    # def get_device_list(self):
+    #    return self.mcd_list
+
+    def get_max_volume(self):
+        status = self.get_status()
+        return status.get('max_volume')
 
     def get_volume_db(self):
         ''' return current volume in db '''
@@ -69,6 +133,17 @@ class MCD(McDevice, GObject.GObject):
         ''' return current volume in range 0-161 (or max_volume) '''
         status = self.get_status()
         return status.get('volume')
+
+    '''def get_volume_percent(self):
+        status = self.get_status()
+        print('status is : ', status)
+        print(-status['max_volume'] + status['volume'])
+'''
+
+    def increment_volume(self):
+        volume = self.zone_obj.get_status()['volume']
+        self.zone_obj.set_volume(volume+1)
+        return self.zone_obj.get_status()['volume']
 
     def get_power_state(self):
         status = self.get_status()
@@ -81,6 +156,9 @@ class MCD(McDevice, GObject.GObject):
         GLib.timeout_add_seconds(1, self.checkit)
 
     def checkit(self):
+        # print(self.mcd_list)
+        # return
+
         info = self.get_play_info()
         lines = []
         lines.append(info.get('artist'))
@@ -158,16 +236,17 @@ class MCD(McDevice, GObject.GObject):
     def decrease_volume(self, dec=0.5):
         volume = self.get_volume()
         # print('mcd.decrease_volume volume is ', volume)
-        self.zone_obj.set_volume(volume + db2vol(dec))
+        self.zone_obj.set_volume(volume + self.db2vol(dec))
 
     def increase_volume(self, inc=0.5):
         # print('mcd.increase_vol')
         volume = self.get_volume()
-        self.zone_obj.set_volume(volume - db2vol(inc))
+        self.zone_obj.set_volume(volume - self.db2vol(inc))
 
-    def set_volume_db(self, db):
+    '''def set_volume_db(self, db):
         # print('set_volume_db')
         self.zone_obj.set_volume(db2vol(db))
+'''
 
     def set_volume(self, volume):
         # print('set_volume ', volume)

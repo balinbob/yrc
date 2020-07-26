@@ -3,14 +3,17 @@
 import sys
 import gi
 from gi.repository import GLib
-from .mcd import MCD
+# from .mcd import MCD
+from .mcd import DeviceList
 from .slider import Slider, RadioBox
 from .switches import RecvrPower
 from .inputs import Inputs
 from .cover import Cover, get_artwork
-from .config import Config
+from .devicebox import DeviceBox, Expander
+# from .config import Config
 from .playerbuttons import PlayerButtons
 from importlib import import_module
+
 gi.require_version('Gtk', '3.0')
 gi.require_version('Pango', '1.0')
 Gtk = import_module('gi.repository.Gtk')
@@ -27,28 +30,53 @@ class YamaWin(Gtk.Window):
     ip_address = None
     vol_pressed = False
     ips = []
-    mcd_list = []
+    # mcd_list = DeviceList()
 
     def __init__(self):
-        print(self.ips)
         Gtk.Window.__init__(self, title='Gyrc')
         self.connect('destroy', Gtk.main_quit)
 
-        config = Config()
+        '''config = Config()
         self.ip_list = config.get_config()
         for n, ip in enumerate(self.ip_list):
             self.ip_list[n] = ip.strip('\n')  # just in case
             print('ip: ', self.ip_list[n])
             mcd = MCD(self, self.ip_list[n])
-            self.mcd_list.append(mcd)
+            self.mcd_list.add(mcd)
+'''
+
+        # self.mcd_list = create_devices()
+
+        self.mcd_list = DeviceList(self)
+
+        print('there are %d devices' % self.mcd_list.get_n_devices())
+        self.zone_list = []
 
         for n, mcdevice in enumerate(self.mcd_list):
             print('connected to %s' % mcdevice.name)
+            print('volume for this is %d / %d' %
+                  (self.mcd_list.get_volume_for_device(n),
+                   self.mcd_list.get_max_volume_for_device(n)))
+
+        self.zone_list = self.mcd_list.get_zone_list()
+        # print(self.zone_list)
+
+        for n, zone in enumerate(self.zone_list):
+            print('mute %d %d' % (n, zone.get_status()['mute']))
+        # print('zone list', self.zone_list)
+
         # sys.exit(0)
 
-        self.mcd = self.mcd_list[0]     # stub
-        print(self.mcd.name)
-        print([m for m in dir(self.mcd) if 'power' in m])
+        self.expander = Expander()
+        self.devBox = DeviceBox(self.mcd_list)
+        self.expander.add(self.devBox)
+        # print(self.devBox)
+
+        try:
+            self.mcd = self.mcd_list[0]     # stub
+        except IndexError:
+            print('ip address(es) not configured')
+            sys.exit(2)
         self.recvState = self.mcd.get_power_state()
         self.recvPower = RecvrPower(self.mcd)
         label = Gtk.Label.new_with_mnemonic('P_ower')
@@ -116,6 +144,9 @@ class YamaWin(Gtk.Window):
         grid.attach(self.cover, 0, 4, 4, 2)
         grid.attach(self.bbox, 4, 4, 3, 1)
         grid.attach(self.info_box, 4, 5, 14, 1)
+
+        grid.attach(self.expander, 0, 7, 6, 1)
+
         self.grid = grid
 
         self.volSlider.set_value(self.mcd.get_volume_db())

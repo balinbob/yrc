@@ -2,11 +2,11 @@
 
 import os
 import sys
-import shutil
+# import shutil
 import gi
 
-from .ping import ping
-from .mcd import MCD
+from .misc import ping
+from .misc import IconInstaller
 from importlib import import_module
 gi.require_version('Gtk', '3.0')
 Gtk = import_module('gi.repository.Gtk')
@@ -17,6 +17,19 @@ mcd_list = []
 ip_list = []
 
 
+def get_config():
+    try:
+        with open(cfg_name, 'r') as f:
+            ip_list = f.readlines()
+        for n, ip in enumerate(ip_list):
+            ip_list[n] = ip.strip('\n')
+    except FileNotFoundError:
+        print('not configured')
+        return None
+    finally:
+        return ip_list
+
+
 class Config(object):
     window = None
 
@@ -24,15 +37,16 @@ class Config(object):
         self.cfg_path = os.path.expanduser('~/.gyrc')
         self.cfg_name = os.path.expanduser('~/.gyrc/gyrc.cfg')
         # self.icon_dest = os.path.join(self.cfg_path, 'icons')
+        iconinstaller = IconInstaller()
+        print('Icons installed? ')
+        print(iconinstaller.icon_install())
 
-    def install_icons(self):
+    '''def install_icons(self):
         icon_dest = os.path.join(os.path.expanduser('~/.gyrc'), 'icons')
         os.makedirs(icon_dest, exist_ok=True)
-        if not icon_install():
+        if not iconinstaller.icon_install():
             print('unable to install icons!')
-            print('Please cppy icons from program_path/images')
-            print('to ~/.gyrc/icons')
-            print('')
+'''
 
     def run(self):
         self.window = Window()
@@ -63,38 +77,8 @@ def get_mcd_list():
         return None
 
 
-def icon_install():
-    icons = ('media-previous.png', 'media-stop.png', 'media-play.png',
-             'media-pause.png', 'media-next.png')
-    srcpath = os.path.join(os.getcwd(), 'yrc/icons')
-    if not os.path.isdir(srcpath):
-        srcpath = os.path.join(os.getcwd(), 'icons')
-    else:
-        pass
-    dstpath = os.path.expanduser('~/.gyrc/icons')
-    if os.path.isdir(dstpath):
-        if os.path.isfile(os.path.join(dstpath, 'media-play.png')):
-            return True
-    else:
-        try:
-            os.mkdir(dstpath)
-        except OSError as e:
-            print(e)
-    if os.path.isdir(srcpath) and os.path.isdir(dstpath):
-        for n in range(5):
-            try:
-                icon = os.path.join(srcpath, icons[n])
-                shutil.copy(icon, dstpath)
-            except OSError as e:
-                print(e)
-                return False
-        return True
-    return False
-
-
 class WidgetBox(Gtk.VBox):
-    strings = ['Receiver', '2nd',
-               '3rd device', '4th device', '5th device']
+    strings = ['Receiver', '2nd', '3rd', '4th', '5th']
     ip_list = []
     entries = []
     buttons = []
@@ -113,7 +97,9 @@ class WidgetBox(Gtk.VBox):
         self.entries.append(self.entry)
         self.entry.connect('activate', self.on_entry, instance)
 
-        self.button = Gtk.Button(label='enter ' + self.strings[instance] + (' device' if instance > 0 else '') + ' ip address')
+        self.button = Gtk.Button(label='enter ' + self.strings[instance] +
+                                 (' device' if instance > 0 else '') +
+                                 ' ip address')
         # self.button.set_label('enter ' + self.strings[instance] +
         #                      ' device' if instance > 0 else '' +
         #                      ' ip address')
@@ -132,6 +118,7 @@ class WidgetBox(Gtk.VBox):
         if ip not in ip_list:
             validator = Ip4Validator(ip)
             if validator.result and ping(ip):
+                from .mcd import MCD
                 mcd = MCD(None, ip)
                 if not mcd:
                     sys.exit(255)
