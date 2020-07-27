@@ -14,21 +14,28 @@ power_icon = os.path.expanduser('~/.gyrc/icons/device-power.png')
 
 
 class Expander(Gtk.Expander):
-    def __init__(self):
+    def __init__(self, devbox):
         Gtk.Expander.__init__(self)
-        self.set_resize_toplevel(True)
+        self.set_size_request(-1, -1)
+        self.connect('activate', self.on_expander_activated, devbox)
+
+    def on_expander_activated(self, expander, devbox):
+        if expander.get_expanded():
+            devbox.hide()
+            win = expander.get_parent().get_toplevel()
+            win.resize(200, 100)
+            win.queue_resize()
+            win.show()
+        else:
+            devbox.show()
 
 
 class DeviceBox(Gtk.VBox):
-    # ip_list = get_config()
-    sliders = []
-    print('in devicebox...................:')
-
     def __init__(self, mcd_list):
         Gtk.VBox.__init__(self)
+        self.set_size_request(-1, -1)
         if not os.path.isfile(power_icon):
             iconinstaller = IconInstaller()
-            print('icon installed?')
             print(iconinstaller.icon_install())
         self.mcd_list = mcd_list
         self.create(mcd_list)
@@ -93,9 +100,9 @@ class SliderBox(Gtk.HBox, GObject.GObject):
                             self.adjust_slider,
                             self.slider)
 
-    def adjust_slider(self, slider, *args):
-        status = self.zone.get_status()
-        slider.set_value(status['volume'])
+    def adjust_slider(self, slider, value, *args):
+        print('in adjust_slider ', value)
+        slider.set_value(value)
 
     def on_volume_adjusted(self, slider, *args):
         print(slider.get_value())
@@ -111,20 +118,20 @@ class SliderBox(Gtk.HBox, GObject.GObject):
     def on_mute_toggled(self, *args):
         self.zone.set_mute(self.mute_button.get_active())
 
-    def toggle_mute_button(self, sliderbox, *args):
-        print(sliderbox.get_children())
+    def toggle_mute_button(self, checkbutton, *args):
+        status = self.zone.get_status()
+        checkbutton.set_active(status['mute'])
 
     def monitor(self):
-        GLib.timeout_add_seconds(3, self.checkit)
+        GLib.timeout_add_seconds(1, self.checkit)
 
     def checkit(self):
         status = self.zone.get_status()
-        # print('volume: ', status['volume'])
-        # print('mute  : ', status['mute'])
-        # print('power : ', status['power'])
         if status['mute'] != self.prev_status['mute']:
-            self.emit('mute-toggled', self.mute_state)
-
+            self.emit('mute-toggled', status['mute'])
+        if status['volume'] != self.prev_status['volume']:
+            print(type(status['volume']))
+            self.emit('volume-adjusted', int(status['volume']))
         self.prev_status = status
         return True
 
@@ -146,8 +153,8 @@ class SliderBox(Gtk.HBox, GObject.GObject):
 
     @GObject.Signal(name='volume-adjusted',
                     flags=GObject.SignalFlags.RUN_LAST,
-                    return_type=float,
-                    arg_types=(float,),
+                    return_type=int,
+                    arg_types=(int,),
                     accumulator=GObject.signal_accumulator_true_handled)
     def volume_adjusted(self, state, *args):
         return False
@@ -168,7 +175,7 @@ class Slider(Gtk.Scale, Gtk.Range, GObject.GObject):
                                          page_size=1.0)
         self.set_adjustment(self.adjustment)
         self.set_orientation(Gtk.Orientation.HORIZONTAL)
-        self.set_size_request(400, -1)
+        self.set_size_request(360, -1)
         self.set_fill_level(self.max * (4/5))
         self.set_has_origin(False)
         self.set_show_fill_level(True)
@@ -179,5 +186,4 @@ class Slider(Gtk.Scale, Gtk.Range, GObject.GObject):
 
     def set_current(self):
         volume = self.zone.get_status()['volume']
-        print('current vol is: ', volume)
         self.set_value(volume)

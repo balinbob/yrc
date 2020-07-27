@@ -35,42 +35,20 @@ class YamaWin(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title='Gyrc')
         self.connect('destroy', Gtk.main_quit)
-
-        '''config = Config()
-        self.ip_list = config.get_config()
-        for n, ip in enumerate(self.ip_list):
-            self.ip_list[n] = ip.strip('\n')  # just in case
-            print('ip: ', self.ip_list[n])
-            mcd = MCD(self, self.ip_list[n])
-            self.mcd_list.add(mcd)
-'''
-
-        # self.mcd_list = create_devices()
-
         self.mcd_list = DeviceList(self)
-
-        print('there are %d devices' % self.mcd_list.get_n_devices())
         self.zone_list = []
 
         for n, mcdevice in enumerate(self.mcd_list):
             print('connected to %s' % mcdevice.name)
-            print('volume for this is %d / %d' %
-                  (self.mcd_list.get_volume_for_device(n),
-                   self.mcd_list.get_max_volume_for_device(n)))
 
         self.zone_list = self.mcd_list.get_zone_list()
-        # print(self.zone_list)
 
         for n, zone in enumerate(self.zone_list):
-            print('mute %d %d' % (n, zone.get_status()['mute']))
-        # print('zone list', self.zone_list)
+            pass
 
-        # sys.exit(0)
-
-        self.expander = Expander()
         self.devBox = DeviceBox(self.mcd_list)
+        self.expander = Expander(self.devBox)
         self.expander.add(self.devBox)
-        # print(self.devBox)
 
         try:
             self.mcd = self.mcd_list[0]     # stub
@@ -83,7 +61,7 @@ class YamaWin(Gtk.Window):
         label.set_mnemonic_widget(self.recvPower)
         label.set_halign(Gtk.Align.END)
         grid = Gtk.Grid()
-        self.set_default_size(640, 320)
+        self.set_default_size(340, 320)
         self.add(grid)
         vspacer = Gtk.Box()
         vspacer.set_size_request(32, 32)
@@ -109,7 +87,6 @@ class YamaWin(Gtk.Window):
         slider_box.pack_start(self.volUpBtn, False, False, 0)
 
         grid.attach(slider_box, 2, 0, 15, 2)
-        # grid.attach(config_button, 18, 0, 1, 1)
         self.inputs = Inputs(self.mcd)
         self.inputs_box = self.inputs.cbox
         self.radio_box = RadioBox(self.volSlider)
@@ -130,7 +107,7 @@ class YamaWin(Gtk.Window):
         self.labels = []
         for n in range(4):
             self.labels.append(Gtk.Label())
-            self.labels[n].set_max_width_chars(60)
+            self.labels[n].set_max_width_chars(72)
             self.labels[n].set_halign(Gtk.Align.START)
             self.labels[n].set_ellipsize(EllipsizeMode.END)
             hbox = Gtk.HBox()
@@ -143,9 +120,9 @@ class YamaWin(Gtk.Window):
 
         grid.attach(self.cover, 0, 4, 4, 2)
         grid.attach(self.bbox, 4, 4, 3, 1)
-        grid.attach(self.info_box, 4, 5, 14, 1)
+        grid.attach(self.info_box, 4, 5, 18, 1)
 
-        grid.attach(self.expander, 0, 7, 6, 1)
+        grid.attach(self.expander, 0, 6, 22, 1)
 
         self.grid = grid
 

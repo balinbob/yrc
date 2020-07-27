@@ -70,8 +70,6 @@ class DeviceList(list):
 
     def get_zone_list(self):
         for n, device in enumerate(self):
-            print('')
-            # print(device.zones['main'])
             self.zone_list.append(device.zones['main'])
         return self.zone_list
 
@@ -98,7 +96,6 @@ class MCD(McDevice, GObject.GObject):
 
         GObject.GObject.__init__(self)
         self.window = window
-        # self.mcd_list.add(self)
         info = self.get_play_info()
         self.playback = info.get('playback')
         self.prev_playback = self.playback
@@ -107,8 +104,6 @@ class MCD(McDevice, GObject.GObject):
         self.power_state = boolit(self.get_status().get('power'))
         self.volume = self.get_volume()
         self.max_volume = self.get_max_volume()
-        # self.volume_one_percent = self.get_volume_percent()
-        print('max volume for this device is: ', self.max_volume)
         self.zone_obj = self.get_zone_obj()
 
     def db2vol(self, db):

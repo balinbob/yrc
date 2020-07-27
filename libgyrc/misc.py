@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import os
+from os.path import dirname, join, isdir
 import shutil
+import inspect
 import platform    # For getting the operating system name
 import subprocess  # For executing a shell command
 
@@ -15,9 +17,12 @@ class IconInstaller(object):
         pass
 
     def icon_install(self):
-        srcpath = os.path.join(os.getcwd(), 'yrc/icons')
-        if not os.path.isdir(srcpath):
-            srcpath = os.path.join(os.getcwd(), 'icons')
+        srcpath = join(dirname(dirname(inspect.getabsfile(IconInstaller))), 'icons')
+        print('srcpath is ', srcpath)
+        if not isdir(srcpath):
+            srcpath = join(os.getcwd(), 'yrc/icons')
+        if not isdir(srcpath):
+            srcpath = join(os.getcwd(), 'icons')
         else:
             pass
 
@@ -26,11 +31,11 @@ class IconInstaller(object):
             os.makedirs(dstpath, exist_ok=True)
         except OSError as e:
             print(e)
-        if os.path.isdir(srcpath) and os.path.isdir(dstpath):
+        if isdir(srcpath) and isdir(dstpath):
             for icon in icons:
                 try:
-                    if not os.path.isfile(os.path.join(dstpath, icon)):
-                        icon = os.path.join(srcpath, icon)
+                    if not os.path.isfile(join(dstpath, icon)):
+                        icon = join(srcpath, icon)
                         shutil.copy(icon, dstpath)
                 except OSError as e:
                     print(e)
