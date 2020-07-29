@@ -4,6 +4,7 @@ import sys
 import gi
 from gi.repository import GLib
 # from .mcd import MCD
+from .ifrunning import listen_for_activation, activate_if_already_running
 from .mcd import DeviceList
 from .slider import Slider, RadioBox
 from .switches import RecvrPower
@@ -221,7 +222,14 @@ class YamaWin(Gtk.Window):
 
 
 def main():
-    YamaWin()
+    APP_ID = 'com.balinbob.gyrc'
+    activated = activate_if_already_running(APP_ID)
+    if activated:
+        sys.exit(0)
+
+    win = YamaWin()
+
+    listen_for_activation(APP_ID, win)
     Gtk.main()
 
 
