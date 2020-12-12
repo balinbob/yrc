@@ -15,10 +15,10 @@ Then, in the folder you wish to install to:
 git clone https://github.com/balinbob/yrc
 
 This will make the yrc (yamaha receiver control) folder.   From it, run:
-./libgyrc/gyrc.py
+./gyrc
 
 or:
-ln -s PATH_TO_LIBGYRC/gyrc.py ~/.local/bin/gyrc
+ln -s PATH_TO_YRC_FOLDER/gyrc ~/.local/bin/gyrc
 
 and make sure ~/.local/bin is in your executable PATH.
 
