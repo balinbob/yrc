@@ -8,6 +8,7 @@ from gi.repository import GLib
 from importlib import import_module
 gi.require_version('Gtk', '3.0')
 Gtk = import_module('gi.repository.Gtk')
+Gdk = import_module('gi.repository.Gdk')
 GdkPixbuf = import_module('gi.repository.GdkPixbuf')
 
 power_icon = os.path.expanduser('~/.gyrc/icons/device-power.png')
@@ -94,6 +95,12 @@ class SliderBox(Gtk.HBox, GObject.GObject):
         self.power_button.set_active(status['power'])
         self.slider.connect('value-changed',
                             self.on_volume_adjusted)
+
+        self.volUpBtn.connect('button-press-event', self.volbtn_click)
+        self.volUpBtn.connect('button-release-event', self.volbtn_click)
+        self.volDnBtn.connect('button-press-event', self.volbtn_click)
+        self.volDnBtn.connect('button-release-event', self.volbtn_click)
+
         self.monitor()
         self.connect_object('mute-toggled',
                             self.toggle_mute_button,
@@ -104,6 +111,16 @@ class SliderBox(Gtk.HBox, GObject.GObject):
         self.connect_object('volume-adjusted',
                             self.adjust_slider,
                             self.slider)
+
+    def vol_up(self, volslider):
+        value = volslider.get_value()
+        volslider.set_value(value + 0.5)
+        self.mcd.increase_volume(0.5)
+
+    def vol_down(self, volslider):
+        value = volslider.get_value()
+        volslider.set_value(value - 0.5)
+        self.mcd.decrease_volume(0.5)
 
     def adjust_slider(self, slider, value, *args):
         # print('in adjust_slider ', value)
@@ -126,6 +143,27 @@ class SliderBox(Gtk.HBox, GObject.GObject):
     def toggle_mute_button(self, checkbutton, *args):
         status = self.zone.get_status()
         checkbutton.set_active(status['mute'])
+
+    def volbtn_click(self, widget, event, data=None):
+        if event.button == 1:
+            if event.type == Gdk.EventType.BUTTON_PRESS:
+                self.vol_pressed = True
+            elif event.type == Gdk.EventType.BUTTON_RELEASE:
+                self.vol_pressed = False
+            GLib.timeout_add(200, self.vol_check_loop, widget)
+
+    def vol_check_loop(self, widget):
+        if self.vol_pressed:
+            slider_value = self.slider.get_value()
+            if widget == self.volDnBtn:
+                self.mcd.decrease_volume(2.0)
+                self.slider.set_value(slider_value - 2.0)
+            elif widget == self.volUpBtn:
+                self.mcd.increase_volume(2.0)
+                self.slider.set_value(slider_value + 2.0)
+            return True
+        else:
+            return False
 
     def monitor(self):
         GLib.timeout_add_seconds(1, self.checkit)
