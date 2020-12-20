@@ -6,10 +6,11 @@ from gi.repository import GLib
 # from .mcd import MCD
 from .ifrunning import listen_for_activation, activate_if_already_running
 from .mcd import DeviceList
-from .slider import Slider, RadioBox
+# from .radiobox import RadioBox
 from .switches import RecvrPower
 from .inputs import Inputs
 from .cover import Cover, get_artwork
+from .master import Master
 from .devicebox import DeviceBox, Expander
 # from .config import Config
 from .playerbuttons import PlayerButtons
@@ -68,40 +69,29 @@ class YamaWin(Gtk.Window):
         vspacer.set_size_request(32, 32)
         grid.set_column_spacing(4)
         grid.set_row_spacing(4)
-        grid.attach(label, 0, 0, 1, 1)
-        hbox = Gtk.HBox()
-        hbox.pack_start(self.recvPower, False, False, 16)
-        grid.attach(hbox, 1, 0, 1, 1)
-        self.volSlider = Slider(-80, 0.0)
-        self.volUpBtn = Gtk.Button.new_from_icon_name(
-                        Gtk.STOCK_GO_FORWARD,
-                        Gtk.IconSize.SMALL_TOOLBAR)
-        self.volUpBtn.set_size_request(10, 10)
-        self.volDnBtn = Gtk.Button.new_from_icon_name(
-                        Gtk.STOCK_GO_BACK,
-                        Gtk.IconSize.SMALL_TOOLBAR)
-        self.volDnBtn.set_size_request(10, 10)
-        slider_box = Gtk.HBox()
-        slider_box.set_size_request(300, 10)
-        slider_box.pack_start(self.volDnBtn, False, False, 0)
-        slider_box.pack_start(self.volSlider, False, False, 0)
-        slider_box.pack_start(self.volUpBtn, False, False, 0)
+        self.master = Master(self.mcd_list)
+        self.sliderbox = self.master.sliderbox
+        self.volSlider = self.sliderbox.slider
+        self.volUpBtn = self.sliderbox.volUpBtn
+        self.volDnBtn = self.sliderbox.volDnBtn
+        # self.radio_box = self.master.radiobox
 
-        grid.attach(slider_box, 2, 0, 15, 2)
         self.inputs = Inputs(self.mcd)
         self.inputs_box = self.inputs.cbox
-        self.radio_box = RadioBox(self.volSlider)
+        # self.radio_box = RadioBox(self.volSlider)
         self.row2 = Gtk.HBox()
         hbox1 = Gtk.HBox()
-        vbox2 = Gtk.VBox()
+        # vbox2 = Gtk.VBox()
         hbox1.set_size_request(330, 10)
-        vbox2.set_size_request(200, 10)
+        # vbox2.set_size_request(200, 10)
         hbox1.pack_start(self.inputs, False, False, 2)
         hbox1.pack_start(self.inputs.select_button, False, False, 2)
-        vbox2.pack_start(self.radio_box, False, False, 2)
-        self.row2.pack_start(hbox1, False, False, 2)
-        self.row2.pack_start(vbox2, False, False, 2)
-        grid.attach(self.row2, 0, 3, 10, 1)
+        # vbox2.pack_start(self.radio_box, False, False, 2)
+        # self.row2.pack_start(hbox1, False, False, 2)
+        # self.row2.pack_start(vbox2, False, False, 2)
+        self.row2.pack_start(self.master, False, False, 2)
+        grid.attach(hbox1, 0, 2, 1, 1)
+        grid.attach(self.row2, 4, 2, 10, 1)
 
         self.info_box = Gtk.VBox()
         self.info_box.set_size_request(10, 10)
@@ -123,18 +113,20 @@ class YamaWin(Gtk.Window):
         grid.attach(self.bbox, 4, 4, 3, 1)
         grid.attach(self.info_box, 4, 5, 18, 1)
 
-        grid.attach(self.expander, 0, 6, 22, 1)
+        grid.attach(self.expander, 0, 7, 22, 1)
 
         self.grid = grid
 
-        self.volSlider.set_value(self.mcd.get_volume_db())
+        # self.volSlider.set_value(self.mcd.get_volume_db())
+        # self.set_volume_limit()
         self.mcd.monitor()
         self.mcd.connect('changed', self.set_power)
         self.mcd.connect('artwork-changed',
                          self.on_artwork_changed)
-        self.recvPower.connect('state-set', self.pwr_cb)
-        self.volhandler = self.volSlider.connect('value-changed',
-                                                 self.volslider_changed)
+        # self.recvPower.connect('state-set', self.pwr_cb)
+
+        # self.volhandler = self.volSlider.connect('value-changed',
+        #                                          self.volslider_changed)
         self.volslider_id = self.mcd.connect('adjust',
                                              self.adjust_volslider)
         self.volUpBtn.connect('button-press-event', self.volbtn_click)
@@ -148,11 +140,13 @@ class YamaWin(Gtk.Window):
         self.show_all()
         self.set_title('Gyrc - ' +
                        self.mcd.get_device_info().get('model_name'))
-
-    def on_config_button(self, *args):
-        print(args[0])
-        args[0].set_sensitive(True)
-
+    '''
+    def set_volume_limit(self):
+        volume_limit = self.radio_box.get_volume_limit()
+        for mcd in self.mcd_list:
+            # print('volume_limit: ', volume_limit)
+            mcd.set_volume_limit(volume_limit)
+    '''
     def on_artwork_changed(self, mcd, *args):
         pixbuf = get_artwork(mcd)
         self.cover.cover.set_from_pixbuf(pixbuf)
@@ -168,7 +162,7 @@ class YamaWin(Gtk.Window):
     def vol_up(self, volslider):
         value = volslider.get_value()
 
-        # print('vol_up: ', value)
+        print('vol_up: ', value)
 
         volslider.set_value(value + 0.5)
         self.mcd.increase_volume(0.5)

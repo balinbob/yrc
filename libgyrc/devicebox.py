@@ -47,20 +47,25 @@ class DeviceBox(Gtk.VBox):
 
 
 class SliderBox(Gtk.HBox, GObject.GObject):
-    index = -1
+    index = 0
 
-    def __init__(self, mcd_list, n):
+    def __init__(self, mcd_list, n=0):
         self.index = n
+        if self.index < 0:
+            print('master !!')
         Gtk.HBox.__init__(self)
         GObject.GObject.__init__(self)
         self.set_size_request(-1, -1)
         self.mcd_list = mcd_list
+        self.zone_list = self.mcd_list.get_zone_list()
+
         self.mcd = self.mcd_list[self.index]
         self.zone = self.mcd_list.get_zone_list()[self.index]
+
         status = self.zone.get_status()
         self.prev_status = status
         self.max_volume = status['max_volume']
-        print('max volume for this device is: ', self.max_volume)
+        # print('max volume for this device is: ', self.max_volume)
         self.slider = Slider(self.zone)
 
         self.volUpBtn = Gtk.Button.new_from_icon_name(
@@ -101,11 +106,11 @@ class SliderBox(Gtk.HBox, GObject.GObject):
                             self.slider)
 
     def adjust_slider(self, slider, value, *args):
-        print('in adjust_slider ', value)
+        # print('in adjust_slider ', value)
         slider.set_value(value)
 
     def on_volume_adjusted(self, slider, *args):
-        print(slider.get_value())
+        # print(slider.get_value())
         self.zone.set_volume(slider.get_value())
 
     def toggle_power_button(self, power_button, *args):
@@ -126,11 +131,12 @@ class SliderBox(Gtk.HBox, GObject.GObject):
         GLib.timeout_add_seconds(1, self.checkit)
 
     def checkit(self):
+        self.slider.set_volume_limit(self.mcd.volume_limit)
         status = self.zone.get_status()
         if status['mute'] != self.prev_status['mute']:
             self.emit('mute-toggled', status['mute'])
         if status['volume'] != self.prev_status['volume']:
-            print(type(status['volume']))
+            # print(type(status['volume']))
             self.emit('volume-adjusted', int(status['volume']))
         self.prev_status = status
         return True
@@ -161,8 +167,12 @@ class SliderBox(Gtk.HBox, GObject.GObject):
 
 
 class Slider(Gtk.Scale, Gtk.Range, GObject.GObject):
-    def __init__(self, zone):
+    def __init__(self, zone=None):
         self.zone = zone
+
+        if not self.zone:
+            print('master slider')
+
         self.max = self.zone.get_status()['max_volume']
         Gtk.Scale.__init__(self)
         Gtk.Range.__init__(self, 0, self.max)
@@ -184,6 +194,13 @@ class Slider(Gtk.Scale, Gtk.Range, GObject.GObject):
             self.add_mark(n, Gtk.PositionType.TOP)
         self.set_current()
 
+    def set_volume_limit(self, limit):
+        # print('limit in devicebox.slider as percent: ', limit)
+        limit = ((100+limit)/100) * self.max
+        # print('limit is: %s' % limit)
+        self.set_fill_level(limit)
+
     def set_current(self):
         volume = self.zone.get_status()['volume']
+        print('volume for zone: %s' % volume)
         self.set_value(volume)

@@ -76,6 +76,7 @@ class DeviceList(list):
 
 class MCD(McDevice, GObject.GObject):
     # mcd_list = DeviceList()
+    volume_limit = 0
 
     def __init__(self, window, ip, udp_port=None):
         for udp_port in range(5010, 5019):
@@ -106,6 +107,10 @@ class MCD(McDevice, GObject.GObject):
         self.max_volume = self.get_max_volume()
         self.zone_obj = self.get_zone_obj()
 
+    def set_volume_limit(self, limit):
+        # print('in mcd:     ', limit)
+        self.volume_limit = limit
+
     def db2vol(self, db):
         return self.max_volume+(db * 2)
 
@@ -129,12 +134,6 @@ class MCD(McDevice, GObject.GObject):
         status = self.get_status()
         return status.get('volume')
 
-    '''def get_volume_percent(self):
-        status = self.get_status()
-        print('status is : ', status)
-        print(-status['max_volume'] + status['volume'])
-'''
-
     def increment_volume(self):
         volume = self.zone_obj.get_status()['volume']
         self.zone_obj.set_volume(volume+1)
@@ -151,9 +150,8 @@ class MCD(McDevice, GObject.GObject):
         GLib.timeout_add_seconds(1, self.checkit)
 
     def checkit(self):
-        # print(self.mcd_list)
-        # return
-
+        # self.window.set_volume_limit()
+        # print('volume limit in mcd: ', self.volume_limit)
         info = self.get_play_info()
         lines = []
         lines.append(info.get('artist'))
@@ -179,9 +177,9 @@ class MCD(McDevice, GObject.GObject):
         if self.power_state != self.get_power_state():
             self.power_state = self.get_power_state()
             self.emit('changed', self.power_state)
-        volume = self.get_volume_db()
-        if self.window.volSlider.get_value() != volume:
-            self.emit('adjust', volume)
+        # volume = self.get_volume_db()
+        # if self.window.volSlider.get_value() != volume:
+        #     self.emit('adjust', volume)
 
         for n, label in enumerate(self.window.labels):
             try:
@@ -210,6 +208,7 @@ class MCD(McDevice, GObject.GObject):
             self.decrease_volume()
         elif volume < slider_pos:
             self.increase_volume()
+
         return True
 
     @GObject.Signal(name='playback-changed',
@@ -230,11 +229,11 @@ class MCD(McDevice, GObject.GObject):
 
     def decrease_volume(self, dec=0.5):
         volume = self.get_volume()
-        # print('mcd.decrease_volume volume is ', volume)
+        print('mcd.decrease_volume volume is ', volume)
         self.zone_obj.set_volume(volume + self.db2vol(dec))
 
     def increase_volume(self, inc=0.5):
-        # print('mcd.increase_vol')
+        print('mcd.increase_vol')
         volume = self.get_volume()
         self.zone_obj.set_volume(volume - self.db2vol(inc))
 
@@ -244,7 +243,7 @@ class MCD(McDevice, GObject.GObject):
 '''
 
     def set_volume(self, volume):
-        # print('set_volume ', volume)
+        print('set_volume ', volume)
         self.zone_obj.set_volume(volume)
 
     def get_zones(self):
