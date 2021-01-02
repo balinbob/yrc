@@ -22,8 +22,8 @@ def get_artwork(mcd):
     try:
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
                     filename='/tmp/cover.jpg',
-                    width=250,
-                    height=250,
+                    width=300,
+                    height=300,
                     preserve_aspect_ratio=True)
     except Exception as e:
         print(e)
