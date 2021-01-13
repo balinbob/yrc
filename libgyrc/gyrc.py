@@ -180,11 +180,11 @@ class YamaWin(Gtk.Window):
     def pwr_cb(self, win, state):
         self.mcd.state = state
         return True
-
+    '''
     def volslider_changed(self, slider):
         db = slider.get_value()
         self.mcd.set_volume(db2vol(db))
-
+    '''
     def adjust_volslider(self, mcd, status):
         # active_limit = self.radio_box.get_radio_value()
         self.volSlider.set_value(value=status)
